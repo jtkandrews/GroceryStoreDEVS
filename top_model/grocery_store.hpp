@@ -68,10 +68,11 @@ struct grocery_store : public Coupled {
         addCoupling(self1->out_free, dist->in_laneFreed);
 
         addCoupling(pay->custOut, walk->custIn);
-        addCoupling(pay->custOut, pack->in_order);
         addCoupling(walk->custArrived, sink_walkin->in);
 
-        // Online orders: pack then dispatch/pickup then finish
+        // Online orders: bypass checkout and go directly to packing
+        addCoupling(dist->out_online, pack->in_order);
+        // pack then dispatch/pickup then finish
         addCoupling(pack->out_packed, curb->orderIn);
         addCoupling(curb->finished,   sink_online->in);
     }

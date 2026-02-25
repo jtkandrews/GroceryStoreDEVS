@@ -1,19 +1,13 @@
-# GroceryStoreDEVS – Main Simulation Run Summary
+# GroceryStoreDEVS – Main Simulation Run Summary (300s)
 
 Date: 2026-02-25
 
-This report explains the `make run` output from the full grocery store simulation and highlights why the behavior indicates a correct end‑to‑end run.
+This report explains the `make run` output from the 300s full simulation and highlights why the behavior indicates a correct end‑to‑end run with **online orders bypassing checkout**.
 
 ---
 
 ## 1) What this output represents
-The log shows the state transitions and outputs of all atomic models within the top coupled model as simulated time advances. Each line includes:
-- **time**: simulation time
-- **model_name**: which atomic model produced the log
-- **port_name**: which output port (if any) fired
-- **data**: state or message content
-
-In this run, the model is driven by the **Generator** (stochastic arrivals) and the **Distributor** (routing customers to lanes). Customers flow through:
+Each log line is a state change or output event from an atomic model. The core flow is:
 
 **Generator → Distributor → Cash/Self → Payment → Traveler → Walk‑in Sink**
 
@@ -21,69 +15,48 @@ In this run, the model is driven by the **Generator** (stochastic arrivals) and 
 
 ---
 
-## 2) Why the run is working
-Several expected behaviors appear consistently:
+## 2) Evidence in the output
 
-### A) Generator produces customers over time
-- At $t=0$, the Generator emits the first customer (id 0) and schedules the next inter‑arrival time.
-- Additional customers appear at realistic, non‑uniform times (exponential arrival process).
+### A) Online orders skip checkout
+At $t=0$, customer id 0 is **online=1** and the Distributor emits `out_online` (not a lane output):
+- `out_online` fired at $t=0$ for id 0
+- Packer immediately enters PACKING with `sigma=115.729`
 
-### B) Distributor routes to the correct lane types
-- Customers with lower item counts are routed to self‑checkout (e.g., id 1 with 4 items to lane 3).
-- Larger baskets are routed to staffed lanes (e.g., id 2 with 26 items to cash lane 0).
+This confirms online orders bypass the checkout lanes and payment.
 
-This shows the item‑count routing rule is working and queue state is updated when lanes free.
+### B) Walk‑in customers go through lanes and payment
+At $t=177.078$, customer id 2 is **online=0** and is routed to cash lane 0:
+- Cash lane enters BUSY with `sigma=27` (27 items)
+- At $t=204.078`, cash lane outputs `out_toPayment` and `out_free`
+- Payment processes the customer, then Traveler starts and completes after 10 seconds
+- `sink_walkin` count increments to 1 at $t=221.963`
 
-### C) Cash lanes emit completion at service time
-- Example: id 2 with 26 items enters cash lane at $t=39.0853$ with $\sigma=26$ and completes at $t=65.0853$.
-- Each completion produces both `out_toPayment` and `out_free`, which updates the Distributor.
+This shows the full walk‑in path is working (lane → payment → traveler → sink).
 
-### D) Payment processing is sequenced correctly
-- Payment times vary based on card vs cash.
-- When payments are busy, later customers queue and complete later.
+### C) Payment type affects timing
+You can see both **card** and **cash** payments in the log (e.g., id 2 card, id 5 cash). The payment processor’s `sigma` varies based on payment type, which matches the model’s random timing distributions.
 
-### E) Traveler completes walk‑ins
-- Walk‑in customers (online=0) go to Traveler after payment and produce `custArrived` 10 seconds later.
-- Each arrival increments `sink_walkin` (count steadily increases).
+### D) Queue and lane‑free feedback
+When a lane completes service, `out_free` triggers Distributor’s `out_okGo`, freeing capacity and allowing new arrivals to be accepted. This feedback loop appears repeatedly and keeps the queues stable.
 
-### F) Online flow bypasses checkout
-- Online orders (online=1) are routed **directly from Distributor to Packer**, bypassing checkout and payment.
-- Packer enters PACKING with the customer’s `searchTime` and remains busy appropriately.
-
-Note: Curbside output may still not appear within 1000s if packing times and travel times are large. That is expected with the current random parameters.
+### E) Online orders reach curbside later
+At $t=191.51`, the first packed online order is sent to curbside and curbside enters BUSY with `sigma=352.986`. Because travel times are large, `sink_online` remains 0 during the 300s run. This is expected for this short window.
 
 ---
 
-## 3) Key behaviors visible in the log
-
-### Example: Customer id 1 (walk‑in)
-- Routed to self‑checkout (lane 3)
-- Payment completes at $t=41.4196$
-- Traveler emits `custArrived` at $t=51.4196$
-- `sink_walkin` count increases to 1
-
-### Example: Customer id 0 (online)
-- Routed directly to Packer by Distributor (bypasses checkout)
-- Packer begins packing for 200.372s
-- No immediate curbside completion (long queue + travel time)
-
-These align with the intended behavior of the model specification.
+## 3) Why the run is correct
+- **Generator** outputs appear at stochastic times (e.g., 0, 75.7806, 177.078), matching exponential inter‑arrival behavior.
+- **Distributor** routes online orders directly to Packer and offline orders to lanes based on item counts.
+- **Cash/Self** service times match `items × timePerItem` (e.g., 27 items → 27 seconds).
+- **Payment** processes customers in order and uses variable service times tied to card/cash.
+- **Traveler** completes walk‑ins after 10 seconds, and **sink_walkin** counts increase accordingly.
+- **Packer/Curbside** handle online orders independently of checkout.
 
 ---
 
-## 4) Why counts and idle states make sense
-- `sink_walkin` reaches 13 by the end of the run, reflecting walk‑in completions.
-- `sink_online` may remain 0 in this window if online orders are still being packed or waiting for curbside pickup (long travel times).
-- Many lanes and models return to IDLE between events, indicating the DEVS scheduling is stable and no deadlocks occur.
+## 4) Summary
+This 300s run shows both workflows functioning:
+- Online orders bypass checkout and go directly to packing/curbside.
+- Walk‑ins use lanes, payment, and traveler, then increment the walk‑in sink.
 
----
-
-## 5) Summary
-The run demonstrates a correct end‑to‑end simulation:
-- Stochastic arrivals appear correctly.
-- Routing logic sends customers to appropriate lanes.
-- Service times and queues behave as expected.
-- Walk‑in completions increment the sink.
-- Online orders flow into packing and curbside preparation.
-
-Overall, the output represents a coherent, working grocery store DEVS model under load with random arrivals.
+The observed events in the log match the intended DEVS model behavior.

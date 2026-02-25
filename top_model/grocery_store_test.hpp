@@ -74,8 +74,8 @@ struct grocery_store_test : public Coupled {
         // traveler -> top output (walk-ins done)
         addCoupling(walk->custArrived, out_walkin_done);
 
-        // payment -> packer for online orders
-        addCoupling(pay->custOut, pack->in_order);
+        // online orders bypass checkout
+        addCoupling(dist->out_online, pack->in_order);
 
         // packer -> curbside -> top output (online done)
         addCoupling(pack->out_packed, curb->orderIn);

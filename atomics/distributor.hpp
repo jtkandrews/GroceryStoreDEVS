@@ -37,10 +37,14 @@ struct DistributorState {
     };
     std::vector<Route> outbox;
 
+    // Online orders bypass lanes
+    std::vector<CustomerData> onlineOutbox;
+
     DistributorState()
         : phase(Phase::IDLE),
           queues(TOTAL_LANES, 0),
-          outbox() {}
+          outbox(),
+          onlineOutbox() {}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const DistributorState& s) {
@@ -51,7 +55,8 @@ inline std::ostream& operator<<(std::ostream& os, const DistributorState& s) {
     for (size_t i = 0; i < s.queues.size(); ++i) {
         os << s.queues[i] << (i + 1 < s.queues.size() ? "," : "");
     }
-    os << "],outbox:" << s.outbox.size() << "}";
+    os << "],outbox:" << s.outbox.size()
+       << ",online:" << s.onlineOutbox.size() << "}";
     return os;
 }
 
@@ -67,6 +72,7 @@ public:
     Port<CustomerData> out_cash2;
     Port<CustomerData> out_self0;
     Port<CustomerData> out_self1;
+    Port<CustomerData> out_online;
 
     // Feedback to Generator
     Port<bool> out_holdOff;
@@ -86,6 +92,7 @@ public:
         out_cash2 = addOutPort<CustomerData>("out_cash2");
         out_self0 = addOutPort<CustomerData>("out_self0");
         out_self1 = addOutPort<CustomerData>("out_self1");
+        out_online = addOutPort<CustomerData>("out_online");
 
         out_holdOff = addOutPort<bool>("out_holdOff");
         out_okGo     = addOutPort<bool>("out_okGo");
@@ -99,6 +106,7 @@ public:
         s.emitHold = false;
         s.emitOk   = false;
         s.outbox.clear();
+        s.onlineOutbox.clear();
     }
 
     void externalTransition(DistributorState& s, double /*e*/) const override {
@@ -117,6 +125,11 @@ public:
         // 2) Route customers
         if (!in_customer->empty()) {
             for (const CustomerData& cust : in_customer->getBag()) {
+                if (cust.isOnlineOrder) {
+                    s.onlineOutbox.push_back(cust);
+                    s.phase = DistributorState::Phase::SEND;
+                    continue;
+                }
                 const int lane = chooseLane(s, cust);
                 if (lane >= 0) {
                     s.queues[lane]++;
@@ -144,6 +157,10 @@ public:
             else if (r.lane == 2) out_cash2->addMessage(r.cust);
             else if (r.lane == 3) out_self0->addMessage(r.cust);
             else if (r.lane == 4) out_self1->addMessage(r.cust);
+        }
+
+        for (const auto& cust : s.onlineOutbox) {
+            out_online->addMessage(cust);
         }
     }
 

@@ -15,6 +15,7 @@ struct top_test_distributor : public Coupled {
     Port<CustomerData> out_cash2_test;
     Port<CustomerData> out_self0_test;
     Port<CustomerData> out_self1_test;
+    Port<CustomerData> out_online_test;
     Port<int>          out_lane_test;
     Port<bool>         out_hold_test;
     Port<bool>         out_ok_test;
@@ -25,6 +26,7 @@ struct top_test_distributor : public Coupled {
         out_cash2_test = addOutPort<CustomerData>("out_cash2_test");
         out_self0_test = addOutPort<CustomerData>("out_self0_test");
         out_self1_test = addOutPort<CustomerData>("out_self1_test");
+        out_online_test = addOutPort<CustomerData>("out_online_test");
         out_lane_test  = addOutPort<int>("out_lane_test");
         out_hold_test  = addOutPort<bool>("out_hold_test");
         out_ok_test    = addOutPort<bool>("out_ok_test");
@@ -46,6 +48,7 @@ struct top_test_distributor : public Coupled {
         addCoupling(dist->out_cash2, out_cash2_test);
         addCoupling(dist->out_self0, out_self0_test);
         addCoupling(dist->out_self1, out_self1_test);
+        addCoupling(dist->out_online, out_online_test);
         addCoupling(dist->out_whichLane, out_lane_test);
         addCoupling(dist->out_holdOff, out_hold_test);
         addCoupling(dist->out_okGo, out_ok_test);

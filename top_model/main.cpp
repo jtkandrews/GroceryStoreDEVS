@@ -11,7 +11,7 @@ int main() {
     root.setLogger<cadmium::STDOUTLogger>();
 
     root.start();
-    root.simulate(1000.0); // seconds of simulated time
+    root.simulate(300.0); // seconds of simulated time
     root.stop();
 
     std::cout << "Grocery store simulation completed." << std::endl;
