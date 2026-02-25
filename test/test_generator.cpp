@@ -24,7 +24,9 @@ struct topTestGenerator : public Coupled {
             "okGoReader",    "input_data/input_okGo.txt");
 
         // Generator under test (default params: arrivalMean=60s)
-        auto gen = addComponent<Generator>("gen");
+        auto gen = addComponent<Generator>("gen",
+                           60.0, 300.0, 60.0, 120.0, 0.30, 0.70,
+                           42u);
 
         // EIC – wire readers to Generator control ports
         addCoupling(holdOffReader->out, gen->holdOff);
@@ -56,7 +58,8 @@ struct topTestCustomParams : public Coupled {
             /*travelStdDev=*/ 60.0,
             /*searchMean=*/   120.0,
             /*onlineProb=*/   1.0,   // all orders online
-            /*cardProb=*/     0.0    // no tap-card payments
+            /*cardProb=*/     0.0,   // no tap-card payments
+            /*seed=*/         42u
         );
 
         addCoupling(gen->customerOut, outCustomerTest);

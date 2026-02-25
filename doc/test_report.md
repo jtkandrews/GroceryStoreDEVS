@@ -149,6 +149,54 @@ This document summarizes the simple atomic tests, their outputs, and why each te
 
 **Why it worked:** Control ports and constructor parameters are exercised directly, demonstrating both pause/resume logic and parameterized generation.
 
+**Determinism note:** The generator test uses a fixed RNG seed so outputs are repeatable across runs.
+
+---
+
+## 9) Coupled Checkout – test_coupled_checkout
+**Purpose:** Validate the walk‑in checkout chain as a coupled model (Distributor → Cash → Payment → Traveler).
+
+**Input:** [input_data/checkout_customers.txt](../input_data/checkout_customers.txt)
+
+**Expected Behavior:**
+- Walk‑in customers route to lanes, complete scanning, pay, and arrive via Traveler.
+
+**Observed Output (summary):**
+- Lane outputs and `out_free` pulses are followed by Payment and Traveler events.
+
+**Why it worked:** It exercises multiple atomics together and shows correct handoff between stages.
+
+---
+
+## 10) Coupled Online Flow – test_coupled_online
+**Purpose:** Validate online orders bypass checkout and flow through Packer → Curbside.
+
+**Input:** [input_data/online_customers.txt](../input_data/online_customers.txt)
+
+**Expected Behavior:**
+- Distributor emits `out_online`, packer processes, curbside finishes after travel time.
+
+**Observed Output (summary):**
+- Online orders skip lanes and are handled by packing and curbside stages.
+
+**Why it worked:** Confirms the modern online‑order path as a coupled subsystem.
+
+---
+
+## 11) Full System (Deterministic) – test_full_system
+**Purpose:** End‑to‑end integration test using file‑driven inputs instead of random generator.
+
+**Input:** [input_data/full_system_customers.txt](../input_data/full_system_customers.txt)
+
+**Expected Behavior:**
+- Walk‑ins go through checkout and traveler.
+- Online orders bypass checkout to packing/curbside.
+
+**Observed Output (summary):**
+- Both paths appear in the log with consistent ordering and timing.
+
+**Why it worked:** Provides a reproducible full‑system test without stochastic arrivals.
+
 ---
 
 ## 9) One-Customer Integration – test_one_customer

@@ -4,6 +4,7 @@
 #include <cadmium/modeling/devs/atomic.hpp>
 #include <limits>
 #include <random>
+#include <optional>
 #include <cmath>
 #include "customer_data.hpp"
 
@@ -43,7 +44,8 @@ public:
               double travelStdDev = 60.0,
               double searchMean   = 120.0,  // mean pack/search time (seconds)
               double onlineProb   = 0.30,   // probability of isOnlineOrder
-              double cardProb     = 0.70)   // probability of tap/card payment
+              double cardProb     = 0.70,   // probability of tap/card payment
+              std::optional<unsigned int> seed = std::nullopt)
         : Atomic<GeneratorState>(id, GeneratorState()),
           arrivalDist_(1.0 / std::max(1e-9, arrivalMean)),
           travelDist_ (travelMean, travelStdDev),
@@ -52,6 +54,9 @@ public:
           onlineDist_ (onlineProb),
           cardDist_   (cardProb)
     {
+        if (seed.has_value()) {
+            rng_.seed(*seed);
+        }
         okGo        = addInPort<bool>("okGo");
         holdOff     = addInPort<bool>("holdOff");
         customerOut = addOutPort<CustomerData>("customerOut");
