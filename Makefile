@@ -7,7 +7,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra
 # ------------------------
 # Paths
 # ------------------------
-CADMIUM_INCLUDE ?= CADMIUM_INCLUDE ?= $(addsuffix /include,\
+CADMIUM_INCLUDE ?= $(addsuffix /include,\
     $(shell find $(HOME) -maxdepth 6 -type d -name "cadmium_v2" 2>/dev/null | head -1))
 
 ATOMICS_DIR   = atomics
