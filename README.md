@@ -56,13 +56,6 @@ Nine atomic unit tests validate individual model components:
 - **test_one_customer**: Single customer through full system
 
 ### Coupled Subsystem Tests
-Three coupled tests validate interaction between model subsystems:
-- **test_coupled_checkout**: Walk-in customer flow through distributor → cash lanes → payment processor → traveler
-  - Input: `input_data/checkout_customers.txt`
-  - Tests lane selection logic and payment processing chain
-- **test_coupled_online**: Online customer flow through distributor → packer → curbside dispatcher
-  - Input: `input_data/online_customers.txt`
-  - Validates online bypass of checkout lanes
 - **test_pickup_system**: Pickup system (packer + curbside dispatcher) as a single coupled model
   - Input: `input_data/packer_orders.txt`
   - Tests the internal coupling between packing and curbside operations

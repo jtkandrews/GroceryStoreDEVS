@@ -17,7 +17,7 @@ struct GeneratorState {
 
     GeneratorState()
         : phase(Phase::RUNNING),
-          sigma(0.0),               // fire immediately at t=0
+          sigma(0.0),  //fire immediately 
           nextCustomerId(0) {}
 };
 

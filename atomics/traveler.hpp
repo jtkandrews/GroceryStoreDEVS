@@ -32,7 +32,7 @@ public:
     Port<CustomerData> custIn;
     Port<CustomerData> custArrived;
 
-    int steps;   // how many steps to travel
+    int steps; 
 
     traveler(const std::string& id, int steps_ = 10)
         : Atomic<travelerState>(id, travelerState()),

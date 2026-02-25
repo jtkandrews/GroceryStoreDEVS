@@ -35,8 +35,7 @@ inline std::ostream& operator<<(std::ostream& os, const CustomerData& c) {
     return os;
 }
 
-// Only needed if you ever read CustomerData from a text stream/logger.
-// Format: id items online(0/1) pay(0/1) travel search
+
 inline std::istream& operator>>(std::istream& is, CustomerData& c) {
     int online = 0;
     std::string payToken;
@@ -51,7 +50,6 @@ inline std::istream& operator>>(std::istream& is, CustomerData& c) {
     } else if (payToken == "card" || payToken == "tap" || payToken == "1") {
         c.paymentType = true;
     } else {
-        // Fallback for any other numeric-like token
         try {
             c.paymentType = (std::stoi(payToken) != 0);
         } catch (...) {

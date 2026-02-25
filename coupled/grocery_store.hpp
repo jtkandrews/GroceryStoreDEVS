@@ -26,7 +26,7 @@ struct grocery_store : public Coupled {
         auto cash1 = addComponent<Cash>("cash1", 1, 1.0);
         auto cash2 = addComponent<Cash>("cash2", 2, 1.0);
 
-        // 2 self-checkout lanes (laneId 3..4) — typically faster
+        // 2 self-checkout lanes (laneId 3..4)
         auto self0 = addComponent<Cash>("self0", 3, 0.8);
         auto self1 = addComponent<Cash>("self1", 4, 0.8);
 

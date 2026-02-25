@@ -14,23 +14,19 @@ static constexpr int CASH_LANES  = 3;
 static constexpr int SELF_LANES  = 2;
 static constexpr int TOTAL_LANES = CASH_LANES + SELF_LANES;
 
-// ---- RULE: items <= SELF_ITEM_LIMIT go to self-checkout if possible ----
 static constexpr int SELF_ITEM_LIMIT = 15;
 
-// ---- Max queue per lane (simple cap) ----
+// ---- Max queue per lane (change be changed if wanted more)
 static constexpr int MAX_QUEUE = 2;
 
 struct DistributorState {
     enum class Phase { IDLE, SEND } phase;
 
-    // Current queue lengths (one per lane)
-    std::vector<int> queues; // size TOTAL_LANES
+    std::vector<int> queues;
 
-    // One-tick pulses back to Generator
     bool emitHold = false;
     bool emitOk   = false;
 
-    // Outbox: all lane assignments we need to emit in output()
     struct Route {
         int lane = -1;
         CustomerData cust;
@@ -64,7 +60,7 @@ class Distributor : public Atomic<DistributorState> {
 public:
     // Inputs
     Port<CustomerData> in_customer;
-    Port<int>          in_laneFreed; // laneId that completed service
+    Port<int>          in_laneFreed; 
 
     // Outputs to lanes
     Port<CustomerData> out_cash0;
@@ -78,7 +74,6 @@ public:
     Port<bool> out_holdOff;
     Port<bool> out_okGo;
 
-    // Optional debug
     Port<int> out_whichLane;
 
     explicit Distributor(const std::string& id)
@@ -101,7 +96,6 @@ public:
     }
 
     void internalTransition(DistributorState& s) const override {
-        // Clear one-tick outputs
         s.phase = DistributorState::Phase::IDLE;
         s.emitHold = false;
         s.emitOk   = false;

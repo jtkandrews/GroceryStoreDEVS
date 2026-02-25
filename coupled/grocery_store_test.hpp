@@ -12,8 +12,7 @@ using namespace cadmium;
 
 // A test-friendly top model:
 // - NO generator
-// - takes CustomerData from an input file (IEStream)
-// - exposes "finished walk-in" and "finished online" as out ports
+// - takes CustomerData from an input file
 struct grocery_store_test : public Coupled {
 
     // external ports (so tests can hook file input + sinks)
@@ -27,7 +26,7 @@ struct grocery_store_test : public Coupled {
         out_walkin_done  = addOutPort<CustomerData>("out_walkin_done");
         out_online_done  = addOutPort<CustomerData>("out_online_done");
 
-        // Components (same as your real model, minus generator + sinks)
+        // Components
         auto dist  = addComponent<Distributor>("distributor");
 
         auto cash0 = addComponent<Cash>("cash0", 0, 1.0);
@@ -42,7 +41,7 @@ struct grocery_store_test : public Coupled {
 
         auto pickup = addComponent<pickup_system>("pickup");
 
-        // EIC: file -> distributor
+        // Couplings
         addCoupling(in_customer, dist->in_customer);
 
         // Distributor -> lanes
@@ -66,16 +65,16 @@ struct grocery_store_test : public Coupled {
         addCoupling(self0->out_free, dist->in_laneFreed);
         addCoupling(self1->out_free, dist->in_laneFreed);
 
-        // payment -> traveler (walk-in path)
+        // payment -> traveler 
         addCoupling(pay->custOut, walk->custIn);
 
-        // traveler -> top output (walk-ins done)
+        // traveler -> top output 
         addCoupling(walk->custArrived, out_walkin_done);
 
         // online orders bypass checkout and go to pickup system
         addCoupling(dist->out_online, pickup->in_order);
 
-        // pickup system -> top output (online done)
+        // pickup system -> top output 
         addCoupling(pickup->finished, out_online_done);
     }
 };

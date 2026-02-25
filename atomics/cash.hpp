@@ -33,8 +33,8 @@ inline std::ostream& operator<<(std::ostream& os, const CashState& s) {
 class Cash : public Atomic<CashState> {
 public:
     Port<CustomerData> in_customer;
-    Port<CustomerData> out_toPayment; // -> PaymentProcessor
-    Port<int>          out_free;      // -> Distributor (laneId freed)
+    Port<CustomerData> out_toPayment; 
+    Port<int>          out_free;      
 
     Cash(const std::string& id, int lane, double timePerItem = 1.0)
         : Atomic<CashState>(id, CashState(lane, timePerItem))
@@ -75,4 +75,4 @@ public:
     }
 };
 
-#endif // CASH_HPP
+#endif 

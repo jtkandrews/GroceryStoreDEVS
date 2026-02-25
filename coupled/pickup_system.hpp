@@ -10,7 +10,7 @@ using namespace cadmium;
 
 // Coupled model for online order processing: packing and curbside pickup
 struct pickup_system : public Coupled {
-    // External ports (expose internal ports for coupling)
+    // External ports (
     Port<CustomerData> in_order;
     Port<CustomerData> finished;
 
