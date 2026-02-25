@@ -1,0 +1,243 @@
+---- Running bin/test_cash ----
+=== Cash Test: One Customer ===
+time,model_id,model_name,port_name,data
+0,1,cash0,,{phase:idle,lane:0,sigma:inf}
+0,2,cash_reader,,0
+0,1,cash0,,{phase:busy,lane:0,sigma:12}
+0,2,cash_reader,out,{id:1,items:12,online:0,pay:card,travel:0,search:0}
+0,2,cash_reader,,inf
+12,1,cash0,out_toPayment,{id:1,items:12,online:0,pay:card,travel:0,search:0}
+12,1,cash0,out_free,0
+12,1,cash0,,{phase:idle,lane:0,sigma:inf}
+12,1,cash0,,{phase:idle,lane:0,sigma:inf}
+12,2,cash_reader,,inf
+---- Running bin/test_curbside ----
+=== Curbside Test: Pickup Timing ===
+time,model_id,model_name,port_name,data
+0,1,curbside,,{phase:idle,sigma:inf,queued:0}
+0,2,order_reader,,0
+0,1,curbside,,{phase:busy,sigma:5,queued:0}
+0,2,order_reader,out,{id:1,items:8,online:1,pay:card,travel:5,search:0}
+0,2,order_reader,,1
+1,1,curbside,,{phase:busy,sigma:4,queued:1}
+1,2,order_reader,out,{id:2,items:3,online:1,pay:cash,travel:2,search:0}
+1,2,order_reader,,inf
+5,1,curbside,finished,{id:1,items:8,online:1,pay:card,travel:5,search:0}
+5,1,curbside,,{phase:busy,sigma:2,queued:0}
+7,1,curbside,finished,{id:2,items:3,online:1,pay:cash,travel:2,search:0}
+7,1,curbside,,{phase:idle,sigma:inf,queued:0}
+7,1,curbside,,{phase:idle,sigma:inf,queued:0}
+7,2,order_reader,,inf
+---- Running bin/test_customer_sink ----
+=== CustomerSink Test: Count ===
+time,model_id,model_name,port_name,data
+0,1,sink,,{count:0}
+0,2,cust_reader,,0
+0,1,sink,,{count:1}
+0,2,cust_reader,out,{id:1,items:2,online:0,pay:card,travel:0,search:0}
+0,2,cust_reader,,0.2
+0.2,1,sink,,{count:2}
+0.2,2,cust_reader,out,{id:2,items:1,online:1,pay:cash,travel:0,search:0}
+0.2,2,cust_reader,,inf
+0.2,1,sink,,{count:2}
+0.2,2,cust_reader,,inf
+---- Running bin/test_distributor ----
+=== Distributor Test: Routing + Lane Freed ===
+time,model_id,model_name,port_name,data
+0,1,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,0,0],outbox:0,online:0}
+0,2,lane_reader,,0.5
+0,3,cust_reader,,0
+0,1,distributor,,{phase:send,hold:0,ok:0,q:[0,0,0,1,0],outbox:1,online:0}
+0,3,cust_reader,out,{id:1,items:5,online:0,pay:card,travel:0,search:0}
+0,3,cust_reader,,0.1
+0,1,distributor,out_self0,{id:1,items:5,online:0,pay:card,travel:0,search:0}
+0,1,distributor,out_whichLane,3
+0,1,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,1,0],outbox:0,online:0}
+0.1,1,distributor,,{phase:send,hold:0,ok:0,q:[1,0,0,1,0],outbox:1,online:0}
+0.1,3,cust_reader,out,{id:2,items:20,online:0,pay:cash,travel:0,search:0}
+0.1,3,cust_reader,,0.9
+0.1,1,distributor,out_cash0,{id:2,items:20,online:0,pay:cash,travel:0,search:0}
+0.1,1,distributor,out_whichLane,0
+0.1,1,distributor,,{phase:idle,hold:0,ok:0,q:[1,0,0,1,0],outbox:0,online:0}
+0.5,1,distributor,,{phase:send,hold:0,ok:1,q:[1,0,0,0,0],outbox:0,online:0}
+0.5,2,lane_reader,out,3
+0.5,2,lane_reader,,1
+0.5,1,distributor,out_okGo,1
+0.5,1,distributor,,{phase:idle,hold:0,ok:0,q:[1,0,0,0,0],outbox:0,online:0}
+1,1,distributor,,{phase:send,hold:0,ok:0,q:[1,0,0,0,0],outbox:0,online:1}
+1,3,cust_reader,out,{id:3,items:10,online:1,pay:card,travel:5,search:2}
+1,3,cust_reader,,inf
+1,1,distributor,out_online,{id:3,items:10,online:1,pay:card,travel:5,search:2}
+1,1,distributor,,{phase:idle,hold:0,ok:0,q:[1,0,0,0,0],outbox:0,online:0}
+1.5,1,distributor,,{phase:send,hold:0,ok:1,q:[0,0,0,0,0],outbox:0,online:0}
+1.5,2,lane_reader,out,0
+1.5,2,lane_reader,,inf
+1.5,1,distributor,out_okGo,1
+1.5,1,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,0,0],outbox:0,online:0}
+1.5,1,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,0,0],outbox:0,online:0}
+1.5,2,lane_reader,,inf
+1.5,3,cust_reader,,inf
+---- Running bin/test_generator ----
+=== Test 1: RUNNING start, holdOff/okGo cycle, precedence ===
+time,model_id,model_name,port_name,data
+0,1,gen,,{phase:running,sigma:0,nextId:0}
+0,2,okGoReader,,360
+0,3,holdOffReader,,180
+0,1,gen,customerOut,{id:0,items:3,online:0,pay:card,travel:374.468,search:5.21116}
+0,1,gen,,{phase:running,sigma:31.9851,nextId:1}
+31.9851,1,gen,customerOut,{id:1,items:27,online:0,pay:card,travel:328.729,search:247.45}
+31.9851,1,gen,,{phase:running,sigma:48.777,nextId:2}
+80.7622,1,gen,customerOut,{id:2,items:5,online:1,pay:cash,travel:276.21,search:46.6178}
+80.7622,1,gen,,{phase:running,sigma:105.239,nextId:3}
+180,1,gen,,{phase:paused,sigma:inf,nextId:3}
+180,3,holdOffReader,out,1
+180,3,holdOffReader,,300
+360,1,gen,,{phase:running,sigma:9.58113,nextId:3}
+360,2,okGoReader,out,1
+360,2,okGoReader,,120
+369.581,1,gen,customerOut,{id:3,items:5,online:0,pay:card,travel:263.227,search:377.617}
+369.581,1,gen,,{phase:running,sigma:115.92,nextId:4}
+480,1,gen,,{phase:paused,sigma:inf,nextId:4}
+480,2,okGoReader,out,1
+480,2,okGoReader,,inf
+480,3,holdOffReader,out,1
+480,3,holdOffReader,,inf
+480,1,gen,,{phase:paused,sigma:inf,nextId:4}
+480,2,okGoReader,,inf
+480,3,holdOffReader,,inf
+Test 1 complete. Verify in log:
+  - CustomerData output at t=0 (id=0)
+  - ~3-4 outputs between t=0 and t=180
+  - No output between t=180 and t=360 (PAUSED)
+  - Output resumes after t=360
+  - No output after t=480 (holdOff wins over okGo)
+
+=== Test 2: Custom params – fast arrivals, all online, no card ===
+time,model_id,model_name,port_name,data
+0,1,genCustom,,{phase:running,sigma:0,nextId:0}
+0,1,genCustom,customerOut,{id:0,items:37,online:1,pay:cash,travel:378.369,search:126.93}
+0,1,genCustom,,{phase:running,sigma:3.05705,nextId:1}
+3.05705,1,genCustom,customerOut,{id:1,items:12,online:1,pay:cash,travel:283.715,search:176.308}
+3.05705,1,genCustom,,{phase:running,sigma:5.74346,nextId:2}
+8.80051,1,genCustom,customerOut,{id:2,items:10,online:1,pay:cash,travel:275.081,search:105.779}
+8.80051,1,genCustom,,{phase:running,sigma:0.646167,nextId:3}
+9.44668,1,genCustom,customerOut,{id:3,items:12,online:1,pay:cash,travel:314.469,search:254.837}
+9.44668,1,genCustom,,{phase:running,sigma:0.566973,nextId:4}
+10.0137,1,genCustom,customerOut,{id:4,items:22,online:1,pay:cash,travel:336.647,search:43.1371}
+10.0137,1,genCustom,,{phase:running,sigma:3.8128,nextId:5}
+13.8265,1,genCustom,customerOut,{id:5,items:21,online:1,pay:cash,travel:339.507,search:321.31}
+13.8265,1,genCustom,,{phase:running,sigma:5.79844,nextId:6}
+19.6249,1,genCustom,customerOut,{id:6,items:40,online:1,pay:cash,travel:363.24,search:196.774}
+19.6249,1,genCustom,,{phase:running,sigma:44.2271,nextId:7}
+19.6249,1,genCustom,,{phase:running,sigma:44.2271,nextId:7}
+Test 3 complete. Verify in log:
+  - ~6 CustomerData events in 60s (arrivalMean=10s)
+  - All CustomerData have isOnlineOrder=true, card=false
+  - items in [1,40], travel >= 0, search >= 0
+
+---- Running bin/test_one_customer ----
+time,model_id,model_name,port_name,data
+0,2,traveler,,{phase:idle,steps:0,sigma:inf}
+0,3,curbside,,{phase:idle,sigma:inf,queued:0}
+0,4,packer,,{phase:idle,sigma:inf}
+0,5,payment,,{phase:idle,sigma:inf,queued:0}
+0,6,self1,,{phase:idle,lane:4,sigma:inf}
+0,7,self0,,{phase:idle,lane:3,sigma:inf}
+0,8,cash2,,{phase:idle,lane:2,sigma:inf}
+0,9,cash0,,{phase:idle,lane:0,sigma:inf}
+0,10,cash1,,{phase:idle,lane:1,sigma:inf}
+0,11,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,0,0],outbox:0,online:0}
+0,12,input_reader,,0
+0,11,distributor,,{phase:send,hold:0,ok:0,q:[0,0,0,1,0],outbox:1,online:0}
+0,12,input_reader,out,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+0,12,input_reader,,inf
+0,7,self0,,{phase:busy,lane:3,sigma:4}
+0,11,distributor,out_self0,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+0,11,distributor,out_whichLane,3
+0,11,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,1,0],outbox:0,online:0}
+4,5,payment,,{phase:busy,sigma:82.2089,queued:0}
+4,7,self0,out_toPayment,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+4,7,self0,out_free,3
+4,7,self0,,{phase:idle,lane:3,sigma:inf}
+4,11,distributor,,{phase:send,hold:0,ok:1,q:[0,0,0,0,0],outbox:0,online:0}
+4,11,distributor,out_okGo,1
+4,11,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,0,0],outbox:0,online:0}
+86.2089,2,traveler,,{phase:travel,steps:10,sigma:1}
+86.2089,5,payment,custOut,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+86.2089,5,payment,,{phase:idle,sigma:inf,queued:0}
+87.2089,2,traveler,,{phase:travel,steps:9,sigma:1}
+88.2089,2,traveler,,{phase:travel,steps:8,sigma:1}
+89.2089,2,traveler,,{phase:travel,steps:7,sigma:1}
+90.2089,2,traveler,,{phase:travel,steps:6,sigma:1}
+91.2089,2,traveler,,{phase:travel,steps:5,sigma:1}
+92.2089,2,traveler,,{phase:travel,steps:4,sigma:1}
+93.2089,2,traveler,,{phase:travel,steps:3,sigma:1}
+94.2089,2,traveler,,{phase:travel,steps:2,sigma:1}
+95.2089,2,traveler,,{phase:travel,steps:1,sigma:1}
+96.2089,2,traveler,custArrived,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+96.2089,2,traveler,,{phase:idle,steps:0,sigma:inf}
+96.2089,2,traveler,,{phase:idle,steps:0,sigma:inf}
+96.2089,3,curbside,,{phase:idle,sigma:inf,queued:0}
+96.2089,4,packer,,{phase:idle,sigma:inf}
+96.2089,5,payment,,{phase:idle,sigma:inf,queued:0}
+96.2089,6,self1,,{phase:idle,lane:4,sigma:inf}
+96.2089,7,self0,,{phase:idle,lane:3,sigma:inf}
+96.2089,8,cash2,,{phase:idle,lane:2,sigma:inf}
+96.2089,9,cash0,,{phase:idle,lane:0,sigma:inf}
+96.2089,10,cash1,,{phase:idle,lane:1,sigma:inf}
+96.2089,11,distributor,,{phase:idle,hold:0,ok:0,q:[0,0,0,0,0],outbox:0,online:0}
+96.2089,12,input_reader,,inf
+Done.
+---- Running bin/test_packer ----
+=== Packer Test: Online Orders Only ===
+time,model_id,model_name,port_name,data
+0,1,packer,,{phase:idle,sigma:inf}
+0,2,order_reader,,0
+0,1,packer,,{phase:packing,sigma:3}
+0,2,order_reader,out,{id:1,items:6,online:1,pay:card,travel:0,search:3}
+0,2,order_reader,,0.5
+0.5,1,packer,,{phase:packing,sigma:3}
+0.5,2,order_reader,out,{id:2,items:4,online:0,pay:cash,travel:0,search:2}
+0.5,2,order_reader,,inf
+3.5,1,packer,out_packed,{id:1,items:6,online:1,pay:card,travel:0,search:3}
+3.5,1,packer,,{phase:idle,sigma:inf}
+3.5,1,packer,,{phase:idle,sigma:inf}
+3.5,2,order_reader,,inf
+---- Running bin/test_payment ----
+=== Payment Test: Two Customers Queue ===
+time,model_id,model_name,port_name,data
+0,1,payment,,{phase:idle,sigma:inf,queued:0}
+0,2,pay_reader,,0
+0,1,payment,,{phase:busy,sigma:10.6705,queued:0}
+0,2,pay_reader,out,{id:1,items:5,online:0,pay:card,travel:0,search:0}
+0,2,pay_reader,,0.1
+0.1,1,payment,,{phase:busy,sigma:10.5705,queued:1}
+0.1,2,pay_reader,out,{id:2,items:10,online:1,pay:cash,travel:0,search:0}
+0.1,2,pay_reader,,inf
+10.6705,1,payment,custOut,{id:1,items:5,online:0,pay:card,travel:0,search:0}
+10.6705,1,payment,,{phase:busy,sigma:51.0621,queued:0}
+61.7327,1,payment,custOut,{id:2,items:10,online:1,pay:cash,travel:0,search:0}
+61.7327,1,payment,,{phase:idle,sigma:inf,queued:0}
+61.7327,1,payment,,{phase:idle,sigma:inf,queued:0}
+61.7327,2,pay_reader,,inf
+---- Running bin/test_traveler ----
+=== Traveler Test: One Customer ===
+time,model_id,model_name,port_name,data
+0,1,traveler,,{phase:idle,steps:0,sigma:inf}
+0,2,cust_reader,,0
+0,1,traveler,,{phase:travel,steps:10,sigma:1}
+0,2,cust_reader,out,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+0,2,cust_reader,,inf
+1,1,traveler,,{phase:travel,steps:9,sigma:1}
+2,1,traveler,,{phase:travel,steps:8,sigma:1}
+3,1,traveler,,{phase:travel,steps:7,sigma:1}
+4,1,traveler,,{phase:travel,steps:6,sigma:1}
+5,1,traveler,,{phase:travel,steps:5,sigma:1}
+6,1,traveler,,{phase:travel,steps:4,sigma:1}
+7,1,traveler,,{phase:travel,steps:3,sigma:1}
+8,1,traveler,,{phase:travel,steps:2,sigma:1}
+9,1,traveler,,{phase:travel,steps:1,sigma:1}
+10,1,traveler,custArrived,{id:1,items:5,online:0,pay:cash,travel:10,search:0}
+10,1,traveler,,{phase:idle,steps:0,sigma:inf}
+10,1,traveler,,{phase:idle,steps:0,sigma:inf}
+10,2,cust_reader,,inf
