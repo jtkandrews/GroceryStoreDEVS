@@ -213,3 +213,31 @@ This document summarizes the simple atomic tests, their outputs, and why each te
 - Payment completes, traveler emits arrival at ~$t=99$.
 
 **Why it worked:** The full walk-in path is exercised and the final arrival occurs after expected processing and travel delays.
+
+---
+
+## 10) Pickup System Coupled – test_pickup_system
+**Purpose:** Validate the hierarchical coupling of Packer and CurbsideDispatcher as a single pickup_system subsystem. Tests internal coordination between packing orders and curbside dispatch.
+
+**Input:** [input_data/packer_orders.txt](../input_data/packer_orders.txt)
+
+**Expected Behavior:**
+- Online orders arrive at packer input port.
+- Packer begins packing with $\sigma=3$ (3 seconds per order).
+- Packed orders flow to curbside dispatcher.
+- Curbside dispatcher immediately processes and outputs finished customers.
+- Both models remain synchronized via internal coupling.
+
+**Observed Output (summary):**
+- $t=0$: Order 1 (6 items, online, card) arrives at packer; packer enters PACKING with $\sigma=3$.
+- $t=0.5$: Order 2 (4 items, walk-in, cash) arrives at packer input.
+- $t=3.5$: Packer completes and outputs Order 1 to curbside.
+- $t=3.5$: Curbside receives order, immediately processes it (dispatch time is minimal), and emits FINISHED port.
+- $t=3.5$: Sink receives completed customer; packer returns to IDLE.
+
+**Key Observations:**
+- Internal coupling between `packer->out_packed` and `curbside->orderIn` works correctly.
+- External ports `in_order` and `finished` properly expose the subsystem interface.
+- Order flow is smooth: no buffering delays between packer output and curbside input.
+
+**Why it worked:** The pickup_system coupled model correctly encapsulates the packer and curbside dispatcher, preserving their interaction while exposing clean input/output ports for top-level composition.
