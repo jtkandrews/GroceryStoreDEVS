@@ -1,97 +1,95 @@
-//
-// Created by Joseph Andrews on 2026-02-24.
-//
+#ifndef PAYMENT_PROCESSOR_HPP
+#define PAYMENT_PROCESSOR_HPP
 
-#ifndef SYSC4906G_PAYMENT_PROCESSOR_H
-#define SYSC4906G_PAYMENT_PROCESSOR_H
-
-#include <cadmium/core/modeling/atomic.hpp>
+#include <cadmium/modeling/devs/atomic.hpp>
 #include <limits>
 #include <queue>
 #include <random>
+#include <algorithm>
 #include "customer_data.hpp"
 
 using namespace cadmium;
 
-enum class PaymentPhase { PASSIVE, ACTIVE };
-
 struct PaymentProcessorState {
-    PaymentPhase             phase;
-    double                   sigma;
-    CustomerData             currentCustomer;
-    std::queue<CustomerData> waitQueue;
+    enum class Phase { IDLE, BUSY } phase;
+    double sigma;
 
-    explicit PaymentProcessorState()
-        : phase(PaymentPhase::PASSIVE),
+    CustomerData current;
+    std::queue<CustomerData> q;
+
+    PaymentProcessorState()
+        : phase(Phase::IDLE),
           sigma(std::numeric_limits<double>::infinity()),
-          currentCustomer(),
-          waitQueue() {}
+          current(),
+          q() {}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PaymentProcessorState& s) {
-    os << "{phase:"     << (s.phase == PaymentPhase::PASSIVE ? "passive" : "active")
-       << ",sigma:"     << s.sigma
-       << ",queued:"    << s.waitQueue.size() << "}";
+    os << "{phase:" << (s.phase == PaymentProcessorState::Phase::IDLE ? "idle" : "busy")
+       << ",sigma:" << s.sigma
+       << ",queued:" << s.q.size()
+       << "}";
     return os;
 }
 
 class PaymentProcessor : public Atomic<PaymentProcessorState> {
 public:
-    // Ports
-    Port<CustomerData> custForPayment;  // in:  customer arriving from Cash
-    Port<CustomerData> custPaid;        // out: customer forwarded to Traveler
+    Port<CustomerData> custIn;   // from registers
+    Port<CustomerData> custOut;  // to Traveler + Packer
 
     explicit PaymentProcessor(const std::string& id)
         : Atomic<PaymentProcessorState>(id, PaymentProcessorState()),
-          cardDist_(5.0,  15.0),   // tap/card: 5–15 seconds
-          cashDist_(30.0, 120.0)   // cash:    30–120 seconds
+          cardDist_(5.0,  15.0),    // tap/card: 5–15 seconds
+          cashDist_(30.0, 120.0)    // cash:    30–120 seconds
     {
-        custForPayment = addInPort<CustomerData> ("custForPayment");
-        custPaid       = addOutPort<CustomerData>("custPaid");
+        custIn  = addInPort<CustomerData>("custIn");
+        custOut = addOutPort<CustomerData>("custOut");
     }
 
-    // δext — accept new customer; queue if busy
-    void externalTransition(PaymentProcessorState& state, double e) const override {
-        if (!custForPayment->empty()) {
-            for (const auto& cust : custForPayment->getBag()) {
-                if (state.phase == PaymentPhase::PASSIVE) {
-                    state.currentCustomer = cust;
-                    state.phase           = PaymentPhase::ACTIVE;
-                    state.sigma           = samplePayTime(cust.paymentType);
-                } else {
-                    state.waitQueue.push(cust);
-                    state.sigma -= e;   // preserve remaining service time
-                }
+    void externalTransition(PaymentProcessorState& s, double e) const override {
+        // Advance remaining service time if we're busy
+        if (s.phase == PaymentProcessorState::Phase::BUSY) {
+            s.sigma = std::max(0.0, s.sigma - e);
+        }
+
+        if (custIn->empty()) return;
+
+        for (const auto& cust : custIn->getBag()) {
+            if (s.phase == PaymentProcessorState::Phase::IDLE) {
+                s.current = cust;
+                s.phase   = PaymentProcessorState::Phase::BUSY;
+                s.sigma   = samplePayTime(cust.paymentType);
+            } else {
+                s.q.push(cust);
             }
         }
     }
 
-    // λ — forward completed customer
-    void output(const PaymentProcessorState& state) const override {
-        if (state.phase == PaymentPhase::ACTIVE) {
-            custPaid->addMessage(state.currentCustomer);
+    void output(const PaymentProcessorState& s) const override {
+        if (s.phase == PaymentProcessorState::Phase::BUSY) {
+            custOut->addMessage(s.current);
         }
     }
 
-    // δint — serve next customer or go passive
-    void internalTransition(PaymentProcessorState& state) const override {
-        if (!state.waitQueue.empty()) {
-            state.currentCustomer = state.waitQueue.front();
-            state.waitQueue.pop();
-            state.phase = PaymentPhase::ACTIVE;
-            state.sigma = samplePayTime(state.currentCustomer.paymentType);
+    void internalTransition(PaymentProcessorState& s) const override {
+        if (!s.q.empty()) {
+            s.current = s.q.front();
+            s.q.pop();
+            s.phase = PaymentProcessorState::Phase::BUSY;
+            s.sigma = samplePayTime(s.current.paymentType);
         } else {
-            state.phase = PaymentPhase::PASSIVE;
-            state.sigma = std::numeric_limits<double>::infinity();
+            s.phase = PaymentProcessorState::Phase::IDLE;
+            s.sigma = std::numeric_limits<double>::infinity();
+            s.current = CustomerData();
         }
     }
 
-    [[nodiscard]] double timeAdvance(const PaymentProcessorState& state) const override {
-        return state.sigma;
+    [[nodiscard]] double timeAdvance(const PaymentProcessorState& s) const override {
+        return s.sigma;
     }
 
 private:
-    mutable std::mt19937                           rng_{std::random_device{}()};
+    mutable std::mt19937 rng_{std::random_device{}()};
     mutable std::uniform_real_distribution<double> cardDist_;
     mutable std::uniform_real_distribution<double> cashDist_;
 
@@ -100,4 +98,4 @@ private:
     }
 };
 
-#endif //SYSC4906G_PAYMENT_PROCESSOR_H
+#endif // PAYMENT_PROCESSOR_HPP

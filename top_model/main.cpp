@@ -1,22 +1,19 @@
-#include <cadmium/core/logger/csv.hpp>
-#include <cadmium/core/simulation/root_coordinator.hpp>
-#include <limits>
-#include <memory>
+#include <iostream>
+#include <cadmium/simulation/root_coordinator.hpp>
+#include <cadmium/simulation/logger/stdout.hpp>
 
 #include "grocery_store.hpp"
 
 int main() {
-    auto model = std::make_shared<GroceryStore>("store");
+    auto model = std::make_shared<grocery_store>("grocery_store_simulation");
 
-    auto rootCoordinator = cadmium::RootCoordinator(model);
+    cadmium::RootCoordinator root(model);
+    root.setLogger<cadmium::STDOUTLogger>();
 
-    // logs to CSV (you can change filename + delimiter)
-    auto logger = std::make_shared<cadmium::CSVLogger>("simulation_results/log.csv", ";");
-    rootCoordinator.setLogger(logger);
+    root.start();
+    root.simulate(1000.0); // seconds of simulated time
+    root.stop();
 
-    rootCoordinator.start();
-    rootCoordinator.simulate(std::numeric_limits<double>::infinity());
-    rootCoordinator.stop();
-
+    std::cout << "Grocery store simulation completed." << std::endl;
     return 0;
 }

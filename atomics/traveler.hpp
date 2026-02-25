@@ -1,11 +1,7 @@
-//
-// Created by Joseph Andrews on 2026-02-24.
-//
+#ifndef TRAVELER_HPP
+#define TRAVELER_HPP
 
-#ifndef SYSC4906G_TRAVELER_H
-#define SYSC4906G_TRAVELER_H
-
-#include <cadmium/core/modeling/atomic.hpp>
+#include <cadmium/modeling/devs/atomic.hpp>
 #include <limits>
 #include <vector>
 #include <algorithm>
@@ -13,91 +9,85 @@
 
 using namespace cadmium;
 
-enum class TravelerPhase { PASSIVE, ACTIVE };
-
 struct TravelerState {
-    TravelerPhase phase;
-    double        sigma;
+    enum class Phase { PASSIVE, ACTIVE } phase;
+    double sigma;
+
     // (remainingTime, CustomerData) — sorted ascending by remainingTime
     std::vector<std::pair<double, CustomerData>> travelers;
 
-    explicit TravelerState()
-        : phase(TravelerPhase::PASSIVE),
+    TravelerState()
+        : phase(Phase::PASSIVE),
           sigma(std::numeric_limits<double>::infinity()),
           travelers() {}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const TravelerState& s) {
-    os << "{phase:"    << (s.phase == TravelerPhase::PASSIVE ? "passive" : "active")
-       << ",sigma:"    << s.sigma
-       << ",enRoute:"  << s.travelers.size() << "}";
+    os << "{phase:" << (s.phase == TravelerState::Phase::PASSIVE ? "passive" : "active")
+       << ",sigma:" << s.sigma
+       << ",enRoute:" << s.travelers.size()
+       << "}";
     return os;
 }
 
 class Traveler : public Atomic<TravelerState> {
 public:
-    // Ports
-    Port<CustomerData> custIn;       // in:  paid customer from PaymentProcessor
-    Port<CustomerData> custArrived;  // out: customer who has reached destination
+    Port<CustomerData> custIn;      // paid walk-in customers
+    Port<CustomerData> custArrived; // finished walk-in customers
 
     explicit Traveler(const std::string& id)
         : Atomic<TravelerState>(id, TravelerState())
     {
-        custIn      = addInPort<CustomerData> ("custIn");
+        custIn      = addInPort<CustomerData>("custIn");
         custArrived = addOutPort<CustomerData>("custArrived");
     }
 
-    // δext — advance all clocks, then enqueue new customers
-    void externalTransition(TravelerState& state, double e) const override {
-        // Reduce remaining travel time for every active traveler
-        for (auto& [rem, cust] : state.travelers) {
-            rem -= e;
-        }
-        // Enqueue newly arriving customers using their CustomerData.travelTime
+    void externalTransition(TravelerState& s, double e) const override {
+        // Advance all active travelers
+        for (auto& [rem, cust] : s.travelers) rem -= e;
+
+        // Enqueue new customers (walk-ins only)
         if (!custIn->empty()) {
             for (const auto& cust : custIn->getBag()) {
-                state.travelers.push_back({cust.travelTime, cust});
+                if (cust.isOnlineOrder) continue; // online orders are handled by curbside pickup flow
+                s.travelers.push_back({cust.travelTime, cust});
             }
         }
-        refreshSigma(state);
+
+        refreshSigma(s);
     }
 
-    // λ — emit all customers who have just arrived (remainingTime ≈ 0)
-    void output(const TravelerState& state) const override {
-        for (const auto& [rem, cust] : state.travelers) {
-            if (rem <= 1e-9) {
-                custArrived->addMessage(cust);
-            }
+    void output(const TravelerState& s) const override {
+        for (const auto& [rem, cust] : s.travelers) {
+            if (rem <= 1e-9) custArrived->addMessage(cust);
         }
     }
 
-    // δint — remove arrived customers; reschedule for the next earliest
-    void internalTransition(TravelerState& state) const override {
-        state.travelers.erase(
-            std::remove_if(state.travelers.begin(), state.travelers.end(),
+    void internalTransition(TravelerState& s) const override {
+        s.travelers.erase(
+            std::remove_if(s.travelers.begin(), s.travelers.end(),
                            [](const auto& p) { return p.first <= 1e-9; }),
-            state.travelers.end()
+            s.travelers.end()
         );
-        refreshSigma(state);
+        refreshSigma(s);
     }
 
-    [[nodiscard]] double timeAdvance(const TravelerState& state) const override {
-        return state.sigma;
+    [[nodiscard]] double timeAdvance(const TravelerState& s) const override {
+        return s.sigma;
     }
 
 private:
-    // Sort by remaining time; set sigma to the soonest arrival
-    static void refreshSigma(TravelerState& state) {
-        if (state.travelers.empty()) {
-            state.phase = TravelerPhase::PASSIVE;
-            state.sigma = std::numeric_limits<double>::infinity();
+    static void refreshSigma(TravelerState& s) {
+        if (s.travelers.empty()) {
+            s.phase = TravelerState::Phase::PASSIVE;
+            s.sigma = std::numeric_limits<double>::infinity();
         } else {
-            std::sort(state.travelers.begin(), state.travelers.end(),
+            std::sort(s.travelers.begin(), s.travelers.end(),
                       [](const auto& a, const auto& b) { return a.first < b.first; });
-            state.phase = TravelerPhase::ACTIVE;
-            state.sigma = std::max(0.0, state.travelers.front().first);
+            s.phase = TravelerState::Phase::ACTIVE;
+            s.sigma = std::max(0.0, s.travelers.front().first);
         }
     }
 };
 
-#endif //SYSC4906G_TRAVELER_H
+#endif // TRAVELER_HPP

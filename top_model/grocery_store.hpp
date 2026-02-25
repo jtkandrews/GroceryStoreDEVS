@@ -1,97 +1,82 @@
 #ifndef GROCERY_STORE_HPP
 #define GROCERY_STORE_HPP
 
-#include <cadmium/core/modeling/coupled.hpp>
-#include <memory>
-#include <string>
+#include <cadmium/modeling/devs/coupled.hpp>
 
-// atomics
-#include "../atomics/customer_data.hpp"
-#include "../atomics/distributor.hpp"
-#include "../atomics/cash.hpp"
-#include "../atomics/packer.hpp"
-
-// these are YOUR existing files (adjust include names if needed)
-#include "../atomics/generator.hpp"
-#include "../atomics/payment_processor.hpp"
-#include "../atomics/traveler.hpp"
-#include "../atomics/curbside_dispatcher.hpp"
+#include "generator.hpp"
+#include "distributor.hpp"
+#include "cash.hpp"
+#include "payment_processor.hpp"
+#include "traveler.hpp"
+#include "packer.hpp"
+#include "curbside_dispatcher.hpp"
+#include "customer_sink.hpp"
 
 using namespace cadmium;
 
-// Keep these consistent with distributor.hpp lane counts
-static constexpr int CASH_LANES = 3;
-static constexpr int SELF_LANES = 2;
+// Top-level coupled model for the grocery store.
+struct grocery_store : public Coupled {
+    grocery_store(const std::string& id) : Coupled(id) {
+        // Components
+        auto gen   = addComponent<Generator>("generator");
 
-// A simple “top” coupled model that wires everything together.
-class GroceryStore : public Coupled {
-public:
-    GroceryStore(const std::string& id) : Coupled(id) {
+        auto dist  = addComponent<Distributor>("distributor");
 
-        // --- Components ---
-        auto gen   = addComponent<Generator>("gen");
-        auto dist  = addComponent<Distributor>("dist");
-
-        // 5 lanes: 0..2 = staffed cash, 3..4 = self checkout
-        auto cash0 = addComponent<Cash>("cash0", 0, 1.0); // laneId, timePerItem
+        // 3 staffed cash lanes (laneId 0..2)
+        auto cash0 = addComponent<Cash>("cash0", 0, 1.0);
         auto cash1 = addComponent<Cash>("cash1", 1, 1.0);
         auto cash2 = addComponent<Cash>("cash2", 2, 1.0);
 
-        auto self0 = addComponent<Cash>("self0", 3, 0.7); // self checkout faster/slower as you like
-        auto self1 = addComponent<Cash>("self1", 4, 0.7);
+        // 2 self-checkout lanes (laneId 3..4) — typically faster
+        auto self0 = addComponent<Cash>("self0", 3, 0.8);
+        auto self1 = addComponent<Cash>("self1", 4, 0.8);
 
-        auto pay   = addComponent<PaymentProcessor>("pay");
-        auto trav  = addComponent<Traveler>("trav");
+        auto pay   = addComponent<PaymentProcessor>("payment");
+        auto walk  = addComponent<Traveler>("traveler");
 
-        auto pack  = addComponent<Packer>("pack", 1.0); // packTimePerItem (fallback)
-        auto disp  = addComponent<CurbsideDispatcher>("disp");
+        auto pack  = addComponent<Packer>("packer", 1.0);
+        auto curb  = addComponent<CurbsideDispatcher>("curbside");
 
-        // --- Couplings ---
+        auto sink_walkin = addComponent<CustomerSink>("sink_walkin");
+        auto sink_online = addComponent<CustomerSink>("sink_online");
 
-        // Generator -> Distributor
+        // Couplings
+        // Generator <-> Distributor
         addCoupling(gen->customerOut, dist->in_customer);
-
-        // Distributor feedback -> Generator
         addCoupling(dist->out_holdOff, gen->holdOff);
         addCoupling(dist->out_okGo,    gen->okGo);
 
-        // Distributor -> each lane (CustomerData goes straight to chosen lane port)
+        // Distributor -> lanes
         addCoupling(dist->out_cash0, cash0->in_customer);
         addCoupling(dist->out_cash1, cash1->in_customer);
         addCoupling(dist->out_cash2, cash2->in_customer);
         addCoupling(dist->out_self0, self0->in_customer);
         addCoupling(dist->out_self1, self1->in_customer);
 
-        // Each lane -> Distributor (lane freed)
+        // lanes -> PaymentProcessor
+        addCoupling(cash0->out_toPayment, pay->custIn);
+        addCoupling(cash1->out_toPayment, pay->custIn);
+        addCoupling(cash2->out_toPayment, pay->custIn);
+        addCoupling(self0->out_toPayment, pay->custIn);
+        addCoupling(self1->out_toPayment, pay->custIn);
+
+        // lane free signals -> Distributor
         addCoupling(cash0->out_free, dist->in_laneFreed);
         addCoupling(cash1->out_free, dist->in_laneFreed);
         addCoupling(cash2->out_free, dist->in_laneFreed);
         addCoupling(self0->out_free, dist->in_laneFreed);
         addCoupling(self1->out_free, dist->in_laneFreed);
 
-        // All lanes -> PaymentProcessor
-        addCoupling(cash0->out_toPayment, pay->custForPayment);
-        addCoupling(cash1->out_toPayment, pay->custForPayment);
-        addCoupling(cash2->out_toPayment, pay->custForPayment);
-        addCoupling(self0->out_toPayment, pay->custForPayment);
-        addCoupling(self1->out_toPayment, pay->custForPayment);
+        // Payment -> walk-in flow + curbside flow
+        addCoupling(pay->custOut, walk->custIn);     // Traveler ignores online orders
+        addCoupling(pay->custOut, pack->in_order);   // Packer ignores walk-ins
 
-        // PaymentProcessor -> Traveler
-        addCoupling(pay->custPaid, trav->custIn);
+        // Walk-ins finish after travel
+        addCoupling(walk->custArrived, sink_walkin->in);
 
-        // Traveler -> Packer (Packer will ignore non-online orders per your earlier design)
-        addCoupling(trav->custArrived, pack->in_order);
-
-        // Packer -> Dispatcher
-        addCoupling(pack->out_packed, disp->orderIn);
-
-        // Dispatcher -> (top output)
-        // If your Coupled base supports top-level output ports, you can expose it.
-        // If not, you can just rely on logs.
-        //
-        // Example (optional): create an output port on this coupled model and connect it.
-        // out_done = addOutPort<CustomerData>("out_done");
-        // addCoupling(disp->customerFinished, out_done);
+        // Online orders: pack then dispatch/pickup then finish
+        addCoupling(pack->out_packed, curb->orderIn);
+        addCoupling(curb->finished,   sink_online->in);
     }
 };
 

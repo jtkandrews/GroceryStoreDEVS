@@ -1,57 +1,81 @@
 #ifndef PACKER_HPP
 #define PACKER_HPP
 
-#include <cadmium/core/modeling/atomic.hpp>
+#include <cadmium/modeling/devs/atomic.hpp>
 #include <limits>
+#include "customer_data.hpp"
 
 using namespace cadmium;
 
-struct PackerState{
-    enum class Phase{IDLE,PACKING} phase;
-    double packTime;
+struct PackerState {
+    enum class Phase { IDLE, PACKING } phase;
+    double defaultPackTimePerItem;
+    double sigma;
+    CustomerData current;
+
+    explicit PackerState(double ptpi = 1.0)
+        : phase(Phase::IDLE),
+          defaultPackTimePerItem(ptpi),
+          sigma(std::numeric_limits<double>::infinity()),
+          current() {}
 };
 
-#include <iostream>
-
 inline std::ostream& operator<<(std::ostream& os, const PackerState& s) {
-    os << "busy:" << s.busy
-       << " queue:" << s.queueSize
-       << " lastCustomer:" << s.lastCustomerId;
+    os << "{phase:" << (s.phase == PackerState::Phase::IDLE ? "idle" : "packing")
+       << ",sigma:" << s.sigma
+       << "}";
     return os;
 }
 
-class Packer : public Atomic<PackerState>{
+class Packer : public Atomic<PackerState> {
 public:
+    Port<CustomerData> in_order;   // from PaymentProcessor (online orders only)
+    Port<CustomerData> out_packed; // to CurbsideDispatcher
 
-    Port<int> in_order;
-    Port<int> out_ready;
-
-    Packer(const std::string& id,double t=3.0)
-    : Atomic<PackerState>(id,{PackerState::Phase::IDLE,t}){
-
-        in_order=addInPort<int>("in_order");
-        out_ready=addOutPort<int>("out_ready");
+    Packer(const std::string& id, double packTimePerItem = 1.0)
+        : Atomic<PackerState>(id, PackerState(packTimePerItem))
+    {
+        in_order   = addInPort<CustomerData>("in_order");
+        out_packed = addOutPort<CustomerData>("out_packed");
     }
 
-    void internalTransition(PackerState& s) const override{
-        s.phase=PackerState::Phase::IDLE;
+    void externalTransition(PackerState& s, double /*e*/) const override {
+        if (s.phase == PackerState::Phase::IDLE && !in_order->empty()) {
+            const CustomerData cust = in_order->getBag().back();
+
+            // Only pack online orders; ignore walk-ins if they arrive here accidentally.
+            if (!cust.isOnlineOrder) return;
+
+            s.current = cust;
+            s.phase = PackerState::Phase::PACKING;
+
+            if (s.current.searchTime > 0.0) {
+                s.sigma = s.current.searchTime;
+            } else {
+                s.sigma = (s.current.numItems > 0)
+                    ? (static_cast<double>(s.current.numItems) * s.defaultPackTimePerItem)
+                    : s.defaultPackTimePerItem;
+            }
+        }
     }
 
-    void externalTransition(PackerState& s,double) const override{
-        if(s.phase==PackerState::Phase::IDLE && !in_order->empty())
-            s.phase=PackerState::Phase::PACKING;
+    void output(const PackerState& s) const override {
+        if (s.phase == PackerState::Phase::PACKING) {
+            out_packed->addMessage(s.current);
+        }
     }
 
-    void output(const PackerState& s) const override{
-        if(s.phase==PackerState::Phase::PACKING)
-            out_ready->addMessage(1);
+    void internalTransition(PackerState& s) const override {
+        s.phase = PackerState::Phase::IDLE;
+        s.sigma = std::numeric_limits<double>::infinity();
+        s.current = CustomerData();
     }
 
-    double timeAdvance(const PackerState& s) const override{
-        if(s.phase==PackerState::Phase::IDLE)
-            return std::numeric_limits<double>::infinity();
-        return s.packTime;
+    [[nodiscard]] double timeAdvance(const PackerState& s) const override {
+        return (s.phase == PackerState::Phase::IDLE)
+            ? std::numeric_limits<double>::infinity()
+            : s.sigma;
     }
 };
 
-#endif
+#endif // PACKER_HPP
