@@ -9,7 +9,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra
 #
 # Then CADMIUM_INCLUDE can be:
 #   ../cadmium_v2/include
-CADMIUM_INCLUDE ?= ../cadmium_v2/include
+CADMIUM_INCLUDE ?= /Users/jandrews/Documents/Cadmium_Projects/cadmium_v2
 
 # Your project structure
 ATOMICS_DIR   = atomics
