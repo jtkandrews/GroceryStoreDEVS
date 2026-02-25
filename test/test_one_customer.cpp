@@ -12,7 +12,7 @@
 using namespace cadmium;
 
 int main() {
-    // Coupled test harness (basil style)
+    // Coupled test harness
     auto TOP = std::make_shared<cadmium::Coupled>("TOP");
 
     auto in_reader = TOP->addComponent<cadmium::lib::IEStream<CustomerData>>(
