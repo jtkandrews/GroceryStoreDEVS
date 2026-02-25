@@ -133,19 +133,21 @@ This document summarizes the simple atomic tests, their outputs, and why each te
 ---
 
 ## 8) Generator Atomic – test_generator
-**Purpose:** Verify generator produces a customer output at simulation start and schedules next arrival.
+**Purpose:** Validate generator behavior with control signals (hold/resume) and custom parameters.
 
-**Input:** None (stochastic internal generation)
+**Inputs:**
+- [input_data/input_holdOff.txt](../input_data/input_holdOff.txt)
+- [input_data/input_okGo.txt](../input_data/input_okGo.txt)
 
 **Expected Behavior:**
-- Emits a customer at $t=0$.
-- Schedules the next inter-arrival time.
+- **Test 1 (control cycle):** generator starts RUNNING, produces output, pauses on `holdOff`, resumes on `okGo`, and `holdOff` takes precedence if both arrive.
+- **Test 2 (custom params):** faster arrivals, all online orders, no card payments.
 
 **Observed Output (summary):**
-- A customer is emitted at $t=0$.
-- Next arrival scheduled with positive $\sigma$.
+- Test 1 shows output at start, silence during the pause window, and output resuming afterward.
+- Test 2 shows multiple outputs within 60s, all with `isOnlineOrder=true` and `paymentType=false`.
 
-**Why it worked:** The generator starts in RUNNING with $\sigma=0$ and advances correctly.
+**Why it worked:** Control ports and constructor parameters are exercised directly, demonstrating both pause/resume logic and parameterized generation.
 
 ---
 
