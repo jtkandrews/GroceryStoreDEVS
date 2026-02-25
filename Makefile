@@ -11,10 +11,11 @@ CADMIUM_INCLUDE ?= ../cadmium_v2/include
 
 ATOMICS_DIR   = atomics
 TOPMODEL_DIR  = top_model
+COUPLED_DIR   = coupled
 TESTS_DIR     = test
 BIN_DIR       = bin
 
-INCLUDES = -I$(CADMIUM_INCLUDE) -I$(ATOMICS_DIR) -I$(TOPMODEL_DIR) -I$(TESTS_DIR)
+INCLUDES = -I$(CADMIUM_INCLUDE) -I$(ATOMICS_DIR) -I$(TOPMODEL_DIR) -I$(COUPLED_DIR) -I$(TESTS_DIR)
 
 # ------------------------
 # Main sim

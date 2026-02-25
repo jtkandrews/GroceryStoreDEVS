@@ -4,7 +4,7 @@
 #include <cadmium/simulation/logger/stdout.hpp>
 #include <cadmium/lib/iestream.hpp>
 
-#include "grocery_store_test.hpp"
+#include "../coupled/grocery_store_test.hpp"
 #include "customer_data.hpp"
 
 using namespace cadmium;

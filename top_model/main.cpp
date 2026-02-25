@@ -2,7 +2,7 @@
 #include <cadmium/simulation/root_coordinator.hpp>
 #include <cadmium/simulation/logger/stdout.hpp>
 
-#include "grocery_store.hpp"
+#include "../coupled/grocery_store.hpp"
 
 int main() {
     auto model = std::make_shared<grocery_store>("grocery_store_simulation");
