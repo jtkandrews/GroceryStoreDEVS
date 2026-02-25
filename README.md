@@ -6,7 +6,7 @@ This project models a modern grocery store with walk‑in and online (curbside) 
 
 ## Requirements
 - C++17 compiler (g++)
-- Cadmium headers installed at `$HOME/cadmium_v2` or set `CADMIUM_INCLUDE` when running make
+- Ensure the `CADMIUM_INCLUDE` in make file has a path that works properly for your cadmium installation, currently setup to work when both cadmium and project sit at the same level
 
 ## Build
 Run the main simulator build:
@@ -19,6 +19,13 @@ make
 
 ```
 make run
+```
+
+## Build Tests
+Run the tests build:
+
+```
+make tests
 ```
 
 ## Run tests
