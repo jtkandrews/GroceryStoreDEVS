@@ -15,7 +15,9 @@ The log shows the state transitions and outputs of all atomic models within the 
 
 In this run, the model is driven by the **Generator** (stochastic arrivals) and the **Distributor** (routing customers to lanes). Customers flow through:
 
-**Generator → Distributor → Cash/Self → Payment → (Traveler for walk‑ins) / (Packer + Curbside for online) → Sinks**
+**Generator → Distributor → Cash/Self → Payment → Traveler → Walk‑in Sink**
+
+**Generator → Distributor → Packer → Curbside → Online Sink**
 
 ---
 
@@ -44,11 +46,11 @@ This shows the item‑count routing rule is working and queue state is updated w
 - Walk‑in customers (online=0) go to Traveler after payment and produce `custArrived` 10 seconds later.
 - Each arrival increments `sink_walkin` (count steadily increases).
 
-### F) Online flow is active (Packer engaged)
-- Online orders (online=1) route from Payment to Packer.
+### F) Online flow bypasses checkout
+- Online orders (online=1) are routed **directly from Distributor to Packer**, bypassing checkout and payment.
 - Packer enters PACKING with the customer’s `searchTime` and remains busy appropriately.
 
-Note: Curbside output isn’t seen within 1000s because travel times for pickup are large and packer’s queue is long in this run. That’s expected for the random parameters used.
+Note: Curbside output may still not appear within 1000s if packing times and travel times are large. That is expected with the current random parameters.
 
 ---
 
@@ -61,8 +63,7 @@ Note: Curbside output isn’t seen within 1000s because travel times for pickup 
 - `sink_walkin` count increases to 1
 
 ### Example: Customer id 0 (online)
-- Routed to self‑checkout (lane 3)
-- Payment completes at $t=22.2344$
+- Routed directly to Packer by Distributor (bypasses checkout)
 - Packer begins packing for 200.372s
 - No immediate curbside completion (long queue + travel time)
 
@@ -72,7 +73,7 @@ These align with the intended behavior of the model specification.
 
 ## 4) Why counts and idle states make sense
 - `sink_walkin` reaches 13 by the end of the run, reflecting walk‑in completions.
-- `sink_online` remains 0 in this window, because online orders are still being packed or waiting for curbside pickup (long travel times).
+- `sink_online` may remain 0 in this window if online orders are still being packed or waiting for curbside pickup (long travel times).
 - Many lanes and models return to IDLE between events, indicating the DEVS scheduling is stable and no deadlocks occur.
 
 ---
