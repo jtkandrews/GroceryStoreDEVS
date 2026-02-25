@@ -1,7 +1,7 @@
 #ifndef DISTRIBUTOR_HPP
 #define DISTRIBUTOR_HPP
 
-#include <cadmium/modeling/devs/atomic.hpp>
+#include <cadmium/core/modeling/atomic.hpp>
 #include <vector>
 #include <limits>
 
@@ -24,6 +24,15 @@ struct DistributorState {
           numRegisters(n),
           maxQueue(m) {}
 };
+
+#include <iostream>  // make sure this exists
+
+inline std::ostream& operator<<(std::ostream& os, const DistributorState& s) {
+    os << "busy:" << s.busy
+       << " queue:" << s.queueSize
+       << " lastCustomer:" << s.lastCustomerId;
+    return os;
+}
 
 class Distributor : public Atomic<DistributorState> {
 public:
@@ -63,7 +72,7 @@ public:
         }
 
         if(!in_customer->empty()){
-            for(int : in_customer->getBag()){
+            for (int item : in_customer->getBag()) {
                 int best=-1;
                 int bestLen=999999;
 

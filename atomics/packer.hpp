@@ -1,7 +1,7 @@
 #ifndef PACKER_HPP
 #define PACKER_HPP
 
-#include <cadmium/modeling/devs/atomic.hpp>
+#include <cadmium/core/modeling/atomic.hpp>
 #include <limits>
 
 using namespace cadmium;
@@ -10,6 +10,15 @@ struct PackerState{
     enum class Phase{IDLE,PACKING} phase;
     double packTime;
 };
+
+#include <iostream>
+
+inline std::ostream& operator<<(std::ostream& os, const PackerState& s) {
+    os << "busy:" << s.busy
+       << " queue:" << s.queueSize
+       << " lastCustomer:" << s.lastCustomerId;
+    return os;
+}
 
 class Packer : public Atomic<PackerState>{
 public:

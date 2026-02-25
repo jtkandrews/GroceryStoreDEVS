@@ -5,7 +5,7 @@
 #ifndef SYSC4906G_PAYMENT_PROCESSOR_H
 #define SYSC4906G_PAYMENT_PROCESSOR_H
 
-#include <cadmium/modeling/devs/atomic.hpp>
+#include <cadmium/core/modeling/atomic.hpp>
 #include <limits>
 #include <queue>
 #include <random>

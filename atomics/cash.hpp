@@ -1,7 +1,7 @@
 #ifndef CASH_HPP
 #define CASH_HPP
 
-#include <cadmium/modeling/devs/atomic.hpp>
+#include <cadmium/core/modeling/atomic.hpp>
 #include <limits>
 
 using namespace cadmium;
@@ -11,6 +11,15 @@ struct CashState{
     int laneId;
     double serviceTime;
 };
+
+#include <iostream>
+
+inline std::ostream& operator<<(std::ostream& os, const CashState& s) {
+    os << "busy:" << s.busy
+       << " lane:" << s.laneId
+       << " lastCustomer:" << s.lastCustomerId;
+    return os;
+}
 
 class Cash : public Atomic<CashState>{
 public:

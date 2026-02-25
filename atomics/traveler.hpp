@@ -5,7 +5,7 @@
 #ifndef SYSC4906G_TRAVELER_H
 #define SYSC4906G_TRAVELER_H
 
-#include <cadmium/modeling/devs/atomic.hpp>
+#include <cadmium/core/modeling/atomic.hpp>
 #include <limits>
 #include <vector>
 #include <algorithm>
