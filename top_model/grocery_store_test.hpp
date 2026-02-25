@@ -1,33 +1,40 @@
-#ifndef GROCERY_STORE_HPP
-#define GROCERY_STORE_HPP
+#ifndef GROCERY_STORE_TEST_HPP
+#define GROCERY_STORE_TEST_HPP
 
 #include <cadmium/modeling/devs/coupled.hpp>
+using namespace cadmium;
 
-#include "generator.hpp"
 #include "distributor.hpp"
 #include "cash.hpp"
 #include "payment_processor.hpp"
 #include "traveler.hpp"
 #include "packer.hpp"
 #include "curbside_dispatcher.hpp"
-#include "customer_sink.hpp"
 
-using namespace cadmium;
+// A test-friendly top model:
+// - NO generator
+// - takes CustomerData from an input file (IEStream)
+// - exposes "finished walk-in" and "finished online" as out ports
+struct grocery_store_test : public Coupled {
 
-// Top-level coupled model for the grocery store.
-struct grocery_store : public Coupled {
-    grocery_store(const std::string& id) : Coupled(id) {
-        // Components
-        auto gen   = addComponent<Generator>("generator");
+    // external ports (so tests can hook file input + sinks)
+    Port<CustomerData> in_customer;
+    Port<CustomerData> out_walkin_done;
+    Port<CustomerData> out_online_done;
 
+    grocery_store_test(const std::string& id) : Coupled(id) {
+
+        in_customer      = addInPort<CustomerData>("in_customer");
+        out_walkin_done  = addOutPort<CustomerData>("out_walkin_done");
+        out_online_done  = addOutPort<CustomerData>("out_online_done");
+
+        // Components (same as your real model, minus generator + sinks)
         auto dist  = addComponent<Distributor>("distributor");
 
-        // 3 staffed cash lanes (laneId 0..2)
         auto cash0 = addComponent<Cash>("cash0", 0, 1.0);
         auto cash1 = addComponent<Cash>("cash1", 1, 1.0);
         auto cash2 = addComponent<Cash>("cash2", 2, 1.0);
 
-        // 2 self-checkout lanes (laneId 3..4) — typically faster
         auto self0 = addComponent<Cash>("self0", 3, 0.8);
         auto self1 = addComponent<Cash>("self1", 4, 0.8);
 
@@ -37,14 +44,8 @@ struct grocery_store : public Coupled {
         auto pack  = addComponent<Packer>("packer", 1.0);
         auto curb  = addComponent<CurbsideDispatcher>("curbside");
 
-        auto sink_walkin = addComponent<CustomerSink>("sink_walkin");
-        auto sink_online = addComponent<CustomerSink>("sink_online");
-
-        // Couplings
-        // Generator <-> Distributor
-        addCoupling(gen->customerOut, dist->in_customer);
-        addCoupling(dist->out_holdOff, gen->holdOff);
-        addCoupling(dist->out_okGo,    gen->okGo);
+        // EIC: file -> distributor
+        addCoupling(in_customer, dist->in_customer);
 
         // Distributor -> lanes
         addCoupling(dist->out_cash0, cash0->in_customer);
@@ -53,28 +54,33 @@ struct grocery_store : public Coupled {
         addCoupling(dist->out_self0, self0->in_customer);
         addCoupling(dist->out_self1, self1->in_customer);
 
-        // lanes -> PaymentProcessor
+        // lanes -> payment
         addCoupling(cash0->out_toPayment, pay->custIn);
         addCoupling(cash1->out_toPayment, pay->custIn);
         addCoupling(cash2->out_toPayment, pay->custIn);
         addCoupling(self0->out_toPayment, pay->custIn);
         addCoupling(self1->out_toPayment, pay->custIn);
 
-        // lane free signals -> Distributor
+        // lane free -> distributor
         addCoupling(cash0->out_free, dist->in_laneFreed);
         addCoupling(cash1->out_free, dist->in_laneFreed);
         addCoupling(cash2->out_free, dist->in_laneFreed);
         addCoupling(self0->out_free, dist->in_laneFreed);
         addCoupling(self1->out_free, dist->in_laneFreed);
 
+        // payment -> traveler (walk-in path)
         addCoupling(pay->custOut, walk->custIn);
-        addCoupling(pay->custOut, pack->in_order);
-        addCoupling(walk->custArrived, sink_walkin->in);
 
-        // Online orders: pack then dispatch/pickup then finish
+        // traveler -> top output (walk-ins done)
+        addCoupling(walk->custArrived, out_walkin_done);
+
+        // payment -> packer for online orders
+        addCoupling(pay->custOut, pack->in_order);
+
+        // packer -> curbside -> top output (online done)
         addCoupling(pack->out_packed, curb->orderIn);
-        addCoupling(curb->finished,   sink_online->in);
+        addCoupling(curb->finished,   out_online_done);
     }
 };
 
-#endif // GROCERY_STORE_HPP
+#endif

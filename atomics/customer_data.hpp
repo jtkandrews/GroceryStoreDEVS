@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <istream>
+#include <string>
 
 struct CustomerData {
     int    customerId    = -1;
@@ -37,10 +38,27 @@ inline std::ostream& operator<<(std::ostream& os, const CustomerData& c) {
 // Only needed if you ever read CustomerData from a text stream/logger.
 // Format: id items online(0/1) pay(0/1) travel search
 inline std::istream& operator>>(std::istream& is, CustomerData& c) {
-    int online = 0, pay = 1;
-    is >> c.customerId >> c.numItems >> online >> pay >> c.travelTime >> c.searchTime;
+    int online = 0;
+    std::string payToken;
+    if (!(is >> c.customerId >> c.numItems >> online >> payToken >> c.travelTime >> c.searchTime)) {
+        return is;
+    }
+
     c.isOnlineOrder = (online != 0);
-    c.paymentType   = (pay != 0);
+
+    if (payToken == "cash" || payToken == "0") {
+        c.paymentType = false;
+    } else if (payToken == "card" || payToken == "tap" || payToken == "1") {
+        c.paymentType = true;
+    } else {
+        // Fallback for any other numeric-like token
+        try {
+            c.paymentType = (std::stoi(payToken) != 0);
+        } catch (...) {
+            c.paymentType = true;
+        }
+    }
+
     return is;
 }
 
