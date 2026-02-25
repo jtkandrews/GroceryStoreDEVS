@@ -8,8 +8,7 @@ using namespace cadmium;
 #include "cash.hpp"
 #include "payment_processor.hpp"
 #include "traveler.hpp"
-#include "packer.hpp"
-#include "curbside_dispatcher.hpp"
+#include "pickup_system.hpp"
 
 // A test-friendly top model:
 // - NO generator
@@ -41,8 +40,7 @@ struct grocery_store_test : public Coupled {
         auto pay   = addComponent<PaymentProcessor>("payment");
         auto walk  = addComponent<traveler>("traveler");
 
-        auto pack  = addComponent<Packer>("packer", 1.0);
-        auto curb  = addComponent<CurbsideDispatcher>("curbside");
+        auto pickup = addComponent<pickup_system>("pickup");
 
         // EIC: file -> distributor
         addCoupling(in_customer, dist->in_customer);
@@ -74,12 +72,11 @@ struct grocery_store_test : public Coupled {
         // traveler -> top output (walk-ins done)
         addCoupling(walk->custArrived, out_walkin_done);
 
-        // online orders bypass checkout
-        addCoupling(dist->out_online, pack->in_order);
+        // online orders bypass checkout and go to pickup system
+        addCoupling(dist->out_online, pickup->in_order);
 
-        // packer -> curbside -> top output (online done)
-        addCoupling(pack->out_packed, curb->orderIn);
-        addCoupling(curb->finished,   out_online_done);
+        // pickup system -> top output (online done)
+        addCoupling(pickup->finished, out_online_done);
     }
 };
 

@@ -4,6 +4,13 @@ Assignment 1 (SYSC4906G) — Grocery store DEVS model in Cadmium.
 ## Overview
 This project models a modern grocery store with walk‑in and online (curbside) orders. Online orders bypass checkout and go directly to packing and curbside pickup.
 
+## Architecture
+The model follows a hierarchical DEVS structure:
+- **Top-level model**: `grocery_store` (or `grocery_store_test` for deterministic testing)
+- **Checkout subsystem**: Distributor → 5 Cash lanes → Payment Processor → Traveler
+- **Pickup system** (coupled model): Packer + Curbside Dispatcher (handles online orders)
+- **Atomic models**: Generator, Distributor, Cash, Payment, Traveler, Packer, Curbside, CustomerSink
+
 ## Requirements
 - C++17 compiler (g++)
 - Ensure the `CADMIUM_INCLUDE` in make file has a path that works properly for your cadmium installation, currently setup to work when both cadmium and project sit at the same level
@@ -49,13 +56,16 @@ Nine atomic unit tests validate individual model components:
 - **test_one_customer**: Single customer through full system
 
 ### Coupled Subsystem Tests
-Two coupled tests validate interaction between model subsystems:
+Three coupled tests validate interaction between model subsystems:
 - **test_coupled_checkout**: Walk-in customer flow through distributor → cash lanes → payment processor → traveler
   - Input: `input_data/checkout_customers.txt`
   - Tests lane selection logic and payment processing chain
 - **test_coupled_online**: Online customer flow through distributor → packer → curbside dispatcher
   - Input: `input_data/online_customers.txt`
   - Validates online bypass of checkout lanes
+- **test_pickup_system**: Pickup system (packer + curbside dispatcher) as a single coupled model
+  - Input: `input_data/packer_orders.txt`
+  - Tests the internal coupling between packing and curbside operations
 
 ### Full System Test
 - **test_full_system**: Complete integration with deterministic customer mix (walk-in and online)

@@ -8,8 +8,7 @@
 #include "cash.hpp"
 #include "payment_processor.hpp"
 #include "traveler.hpp"
-#include "packer.hpp"
-#include "curbside_dispatcher.hpp"
+#include "pickup_system.hpp"
 #include "customer_sink.hpp"
 
 using namespace cadmium;
@@ -34,8 +33,7 @@ struct grocery_store : public Coupled {
         auto pay   = addComponent<PaymentProcessor>("payment");
         auto walk  = addComponent<traveler>("traveler");
 
-        auto pack  = addComponent<Packer>("packer", 1.0);
-        auto curb  = addComponent<CurbsideDispatcher>("curbside");
+        auto pickup = addComponent<pickup_system>("pickup");
 
         auto sink_walkin = addComponent<CustomerSink>("sink_walkin");
         auto sink_online = addComponent<CustomerSink>("sink_online");
@@ -70,11 +68,9 @@ struct grocery_store : public Coupled {
         addCoupling(pay->custOut, walk->custIn);
         addCoupling(walk->custArrived, sink_walkin->in);
 
-        // Online orders: bypass checkout and go directly to packing
-        addCoupling(dist->out_online, pack->in_order);
-        // pack then dispatch/pickup then finish
-        addCoupling(pack->out_packed, curb->orderIn);
-        addCoupling(curb->finished,   sink_online->in);
+        // Online orders: bypass checkout and go directly to pickup system
+        addCoupling(dist->out_online, pickup->in_order);
+        addCoupling(pickup->finished, sink_online->in);
     }
 };
 
