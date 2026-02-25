@@ -32,7 +32,7 @@ struct grocery_store : public Coupled {
         auto self1 = addComponent<Cash>("self1", 4, 0.8);
 
         auto pay   = addComponent<PaymentProcessor>("payment");
-        auto walk  = addComponent<Traveler>("traveler");
+        auto walk  = addComponent<traveler>("traveler");
 
         auto pack  = addComponent<Packer>("packer", 1.0);
         auto curb  = addComponent<CurbsideDispatcher>("curbside");
@@ -67,11 +67,7 @@ struct grocery_store : public Coupled {
         addCoupling(self0->out_free, dist->in_laneFreed);
         addCoupling(self1->out_free, dist->in_laneFreed);
 
-        // Payment -> walk-in flow + curbside flow
-        addCoupling(pay->custOut, walk->custIn);     // Traveler ignores online orders
-        addCoupling(pay->custOut, pack->in_order);   // Packer ignores walk-ins
-
-        // Walk-ins finish after travel
+        addCoupling(pay->custOut, walk->custIn);
         addCoupling(walk->custArrived, sink_walkin->in);
 
         // Online orders: pack then dispatch/pickup then finish
