@@ -9,7 +9,14 @@ CXXFLAGS = -std=c++17 -Wall -Wextra
 #
 # Then CADMIUM_INCLUDE can be:
 #   ../cadmium_v2/include
-CADMIUM_INCLUDE ?= ../cadmium_v2/include
+CADMIUM_INCLUDE ?= $(addsuffix /include,\
+    $(shell find $(HOME) -maxdepth 6 -type d -name "cadmium_v2" 2>/dev/null | head -1))
+
+
+# Validate it was actually found
+ifeq ($(CADMIUM_INCLUDE),)
+$(error CADMIUM_INCLUDE not found. Run: make CADMIUM_INCLUDE=/path/to/cadmium_v2/include)
+endif
 
 # Your project structure
 ATOMICS_DIR   = atomics
