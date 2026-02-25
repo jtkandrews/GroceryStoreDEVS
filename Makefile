@@ -35,7 +35,11 @@ HEADERS = $(wildcard $(ATOMICS_DIR)/*.hpp) $(wildcard $(ATOMICS_DIR)/*.h) \
           $(wildcard $(TOPMODEL_DIR)/*.hpp) $(wildcard $(TOPMODEL_DIR)/*.h)
 
 # Default target
-all: grocery_sim
+all: test_generator grocery_sim
+
+# Build test_generator
+test_generator: test/test_generator.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_generator test/test_generator.cpp 
 
 # Build grocery simulation executable
 grocery_sim: $(MAIN_SRC) $(HEADERS) | $(BIN_DIR)
@@ -45,9 +49,14 @@ grocery_sim: $(MAIN_SRC) $(HEADERS) | $(BIN_DIR)
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
+
+
 # Run target
 run: grocery_sim
 	./$(BIN_DIR)/grocery_sim
+
+run_generator: test_generator
+	./$(BIN_DIR)/test_generator
 
 # Clean build artifacts
 clean:
