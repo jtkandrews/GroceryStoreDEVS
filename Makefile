@@ -60,6 +60,7 @@ test_full_system: test/test_full_system.cpp $(HEADERS) | $(BIN_DIR)
 # Create bin directory
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
+	ln -sfn ../input_data $(BIN_DIR)/input_data
 
 # Run targets
 run_grocery_sim: grocery_sim
@@ -111,4 +112,4 @@ clean:
         run_test_generator run_test_one_customer \
         run_test_pickup_system run_test_full_system
 
-.PHONY: all clean run tests run-tests
+

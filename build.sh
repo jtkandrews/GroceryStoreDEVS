@@ -20,4 +20,8 @@ make
 # Return to the root project folder
 cd ..
 
+# Ensure tests can resolve input_data when run from bin/
+mkdir -p bin
+ln -sfn ../input_data bin/input_data
+
 echo "Compilation done. Executables are located in the bin/ folder."
