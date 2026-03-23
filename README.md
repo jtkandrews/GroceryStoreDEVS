@@ -46,9 +46,6 @@ To compile and run this project:
 * `make`
 * `bash` (for `build.sh`)
 
-> Cadmium is expected as a sibling folder to this repository:
-> `../cadmium_v2/include`
-
 ## Compilation
 This project uses CMake.
 
