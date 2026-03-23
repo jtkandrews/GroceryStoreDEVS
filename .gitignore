@@ -1,1 +1,28 @@
-.idea
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build output
+bin/
+build/
+*.o
+*.a
+*.out
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.cmake
+install_manifest.txt
+CTestTestfile.cmake
+
+# Logs and CSV output
+*.csv
+simulation_results/*.log
+
+# macOS
+.DS_Store
+

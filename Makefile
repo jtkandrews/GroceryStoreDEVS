@@ -1,87 +1,114 @@
-# ------------------------
 # Compiler settings
-# ------------------------
 CXX      = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
 
-# ------------------------
-# Paths
-# ------------------------
-CADMIUM_INCLUDE ?= $(addsuffix /include,\
-    $(shell find $(HOME) -maxdepth 6 -type d -name "cadmium_v2" 2>/dev/null | head -1))
+# Include paths
+# Cadmium is expected as a sibling folder next to this project: ../cadmium_v2/include
+CADMIUM_INCLUDE = ../cadmium_v2/include
+INCLUDES        = -I$(CADMIUM_INCLUDE) -Iatomics -Icoupled
 
-ATOMICS_DIR   = atomics
-TOPMODEL_DIR  = top_model
-COUPLED_DIR   = coupled
-TESTS_DIR     = test
-BIN_DIR       = bin
+# Directories
+BIN_DIR = bin
 
-INCLUDES = -I$(CADMIUM_INCLUDE) -I$(ATOMICS_DIR) -I$(TOPMODEL_DIR) -I$(COUPLED_DIR) -I$(TESTS_DIR)
+# Header dependencies
+HEADERS = $(wildcard atomics/*.hpp) $(wildcard coupled/*.hpp)
 
-# ------------------------
-# Main sim
-# ------------------------
-MAIN_SRC = $(TOPMODEL_DIR)/main.cpp
+# Default target: build everything
+all: grocery_sim test_cash test_payment test_traveler test_distributor \
+     test_packer test_curbside test_customer_sink test_generator \
+     test_one_customer test_pickup_system test_full_system
 
-# Rebuild when headers change
-HEADERS = $(wildcard $(ATOMICS_DIR)/*.hpp) $(wildcard $(ATOMICS_DIR)/*.h) \
-          $(wildcard $(TOPMODEL_DIR)/*.hpp) $(wildcard $(TOPMODEL_DIR)/*.h) \
-          $(wildcard $(TESTS_DIR)/*.hpp)   $(wildcard $(TESTS_DIR)/*.h)
+# Main simulation
+grocery_sim: top_model/main.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/grocery_sim top_model/main.cpp
 
-# ------------------------
-# Tests (auto-discover)
-# Any tests/foo.cpp -> bin/foo
-# ------------------------
-TEST_SRCS  = $(wildcard $(TESTS_DIR)/*.cpp)
-TEST_BINS  = $(patsubst $(TESTS_DIR)/%.cpp,$(BIN_DIR)/%,$(TEST_SRCS))
+# Atomic tests
+test_cash: test/test_cash.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_cash test/test_cash.cpp
 
-# ------------------------
-# Default target
-# ------------------------
-all: grocery_sim
+test_payment: test/test_payment.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_payment test/test_payment.cpp
 
-# ------------------------
-# Build grocery simulation executable
-# ------------------------
-grocery_sim: $(MAIN_SRC) $(HEADERS) | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/grocery_sim $(MAIN_SRC)
+test_traveler: test/test_traveler.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_traveler test/test_traveler.cpp
 
-run: grocery_sim
-	./$(BIN_DIR)/grocery_sim
+test_distributor: test/test_distributor.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_distributor test/test_distributor.cpp
 
-# ------------------------
-# Build all tests
-# ------------------------
-tests: $(TEST_BINS)
+test_packer: test/test_packer.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_packer test/test_packer.cpp
 
-# Pattern rule: build each test binary from its .cpp
-$(BIN_DIR)/%: $(TESTS_DIR)/%.cpp $(HEADERS) | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $<
+test_curbside: test/test_curbside.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_curbside test/test_curbside.cpp
 
-# Run all tests (just executes each test binary)
-run-tests: tests
-	@set -e; \
-	for t in $(TEST_BINS); do \
-		echo "---- Running $$t ----"; \
-		./$$t; \
-	done
+test_customer_sink: test/test_customer_sink.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_customer_sink test/test_customer_sink.cpp
 
-# Convenience: run a single test by name:
-#   make run-test_one_customer
-# (works for any tests/<name>.cpp)
-run-%: $(BIN_DIR)/%
-	./$(BIN_DIR)/$*
+test_generator: test/test_generator.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_generator test/test_generator.cpp
 
-# ------------------------
+# Integration tests
+test_one_customer: test/test_one_customer.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_one_customer test/test_one_customer.cpp
+
+test_pickup_system: test/test_pickup_system.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_pickup_system test/test_pickup_system.cpp
+
+test_full_system: test/test_full_system.cpp $(HEADERS) | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(BIN_DIR)/test_full_system test/test_full_system.cpp
+
 # Create bin directory
-# ------------------------
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
-# ------------------------
+# Run targets
+run_grocery_sim: grocery_sim
+	./$(BIN_DIR)/grocery_sim
+
+run_test_cash: test_cash
+	./$(BIN_DIR)/test_cash
+
+run_test_payment: test_payment
+	./$(BIN_DIR)/test_payment
+
+run_test_traveler: test_traveler
+	./$(BIN_DIR)/test_traveler
+
+run_test_distributor: test_distributor
+	./$(BIN_DIR)/test_distributor
+
+run_test_packer: test_packer
+	./$(BIN_DIR)/test_packer
+
+run_test_curbside: test_curbside
+	./$(BIN_DIR)/test_curbside
+
+run_test_customer_sink: test_customer_sink
+	./$(BIN_DIR)/test_customer_sink
+
+run_test_generator: test_generator
+	./$(BIN_DIR)/test_generator
+
+run_test_one_customer: test_one_customer
+	./$(BIN_DIR)/test_one_customer
+
+run_test_pickup_system: test_pickup_system
+	./$(BIN_DIR)/test_pickup_system
+
+run_test_full_system: test_full_system
+	./$(BIN_DIR)/test_full_system
+
 # Clean build artifacts
-# ------------------------
 clean:
 	rm -rf $(BIN_DIR)
+
+.PHONY: all clean grocery_sim \
+        test_cash test_payment test_traveler test_distributor test_packer \
+        test_curbside test_customer_sink test_generator test_one_customer \
+        test_pickup_system test_full_system \
+        run_grocery_sim run_test_cash run_test_payment run_test_traveler \
+        run_test_distributor run_test_packer run_test_curbside run_test_customer_sink \
+        run_test_generator run_test_one_customer \
+        run_test_pickup_system run_test_full_system
 
 .PHONY: all clean run tests run-tests

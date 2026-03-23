@@ -7,7 +7,7 @@
 
 #include <cadmium/lib/iestream.hpp>
 
-#include "../coupled/grocery_store_test.hpp"
+#include "grocery_store_test.hpp"
 
 using namespace cadmium;
 
