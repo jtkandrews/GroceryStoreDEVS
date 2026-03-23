@@ -3,7 +3,7 @@ CXX      = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
 
 # Include paths
-# Cadmium is expected as a sibling folder next to this project: ../cadmium_v2/include
+# Cadmium is expected as a sibling folder next to this project: ../cadmium_v2/include, update it to your actual path if different
 CADMIUM_INCLUDE = ../cadmium_v2/include
 INCLUDES        = -I$(CADMIUM_INCLUDE) -Iatomics -Icoupled
 

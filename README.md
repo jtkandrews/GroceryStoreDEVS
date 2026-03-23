@@ -1,86 +1,109 @@
-# GroceryStoreDEVS
-Assignment 1 (SYSC4906G) — Grocery store DEVS model in Cadmium.
+# Grocery Store - DEVS Simulation
+
+**Author:** Grant  
+**Course:** SYSC4906G
 
 ## Overview
-This project models a modern grocery store with walk‑in and online (curbside) orders. Online orders bypass checkout and go directly to packing and curbside pickup.
+This project models a modern grocery store as a DEVS simulation with both walk-in and online (curbside) customer flows.
 
-## Architecture
-The model follows a hierarchical DEVS structure:
-- **Top-level model**: `grocery_store` (or `grocery_store_test` for deterministic testing)
-- **Checkout subsystem**: Distributor → 5 Cash lanes → Payment Processor → Traveler
-- **Pickup system** (coupled model): Packer + Curbside Dispatcher (handles online orders)
-- **Atomic models**: Generator, Distributor, Cash, Payment, Traveler, Packer, Curbside, CustomerSink
+Walk-in customers follow checkout behavior (lane selection, payment, and exit travel), while online customers bypass checkout and are processed by a dedicated pickup subsystem.
 
-## Requirements
-- C++17 compiler (g++)
-- Ensure the `CADMIUM_INCLUDE` in make file has a path that works properly for your cadmium installation, currently setup to work when both cadmium and project sit at the same level
+### Model Hierarchy
+* **Top Model:** Grocery Store
+* **Coupled Models:**
+  * `grocery_store`
+  * `pickup_system`
+* **Atomic Models:**
+  * `Generator`
+  * `Distributor`
+  * `Cash`
+  * `PaymentProcessor`
+  * `traveler`
+  * `Packer`
+  * `CurbsideDispatcher`
+  * `CustomerSink`
 
-## Build
-Run the main simulator build:
+## File Organization
+* **`atomics/`**: Atomic DEVS models (`.hpp`)
+  * `generator.hpp`, `distributor.hpp`, `cash.hpp`, `payment_processor.hpp`, `traveler.hpp`, `packer.hpp`, `curbside_dispatcher.hpp`, `customer_sink.hpp`
+* **`coupled/`**: Coupled DEVS models (`.hpp`)
+  * `pickup_system.hpp`
+  * `grocery_store.hpp`
+  * `grocery_store_test.hpp`
+* **`top_model/`**: Simulation entry point
+  * `main.cpp`
+* **`test/`**: Test benches for atomic/coupled/full-system behavior
+* **`input_data/`**: Input files used by deterministic tests
+* **`CMakeLists.txt`**: CMake build targets and include paths
+* **`build.sh`**: Clean configure/build helper script
+* **`bin/`**: Compiled executables
 
+## Prerequisites
+To compile and run this project:
+* C++17 compiler (`g++`)
+* **Cadmium** DEVS library
+* `cmake` (3.14+)
+* `make`
+* `bash` (for `build.sh`)
+
+> Cadmium is expected as a sibling folder to this repository:
+> `../cadmium_v2/include`
+
+## Compilation
+This project supports both CMake and Makefile workflows.
+
+### Recommended (clean build script)
+```bash
+./build.sh
 ```
+
+What this script does:
+* Removes any previous `build/` directory and old `.csv` files
+* Reconfigures with `cmake ..`
+* Compiles all targets with `make`
+* Places executables in `bin/`
+
+### Manual CMake build
+```bash
+mkdir -p build
+cd build
+cmake ..
+make
+cd ..
+```
+
+### Makefile build
+```bash
 make
 ```
 
-## Run main simulation
+## Testing
+After building, run executables from `bin/` directly (or use the Makefile run targets).
 
+### Main simulation
+* `./bin/grocery_sim`
+* or `make run_grocery_sim`
+
+### Atomic tests
+* `./bin/test_cash`
+* `./bin/test_payment`
+* `./bin/test_traveler`
+* `./bin/test_distributor`
+* `./bin/test_packer`
+* `./bin/test_curbside`
+* `./bin/test_customer_sink`
+* `./bin/test_generator`
+
+### Coupled / integration tests
+* `./bin/test_pickup_system`
+* `./bin/test_one_customer`
+* `./bin/test_full_system`
+
+## Inputs and Logs
+* Deterministic test inputs are in `input_data/`
+* Optional simulation/test logs can be written to `simulation_results/`
+
+Example:
+```bash
+./bin/grocery_sim > simulation_results/main_run.log
 ```
-make run
-```
-
-## Build Tests
-Run the tests build:
-
-```
-make tests
-```
-
-## Run tests
-
-```
-make run-tests
-```
-
-## Tests
-
-### Atomic Tests
-Nine atomic unit tests validate individual model components:
-- **test_cash**: Cash register lane processing
-- **test_payment**: Payment processor for card transactions
-- **test_traveler**: Traveler (walk-out) model
-- **test_distributor**: Customer distribution logic
-- **test_packer**: Online order packing
-- **test_curbside**: Curbside pickup dispatcher
-- **test_customer_sink**: Customer sink/exit points
-- **test_generator**: Customer generator with stochastic arrivals
-- **test_one_customer**: Single customer through full system
-
-### Coupled Subsystem Tests
-- **test_pickup_system**: Pickup system (packer + curbside dispatcher) as a single coupled model
-  - Input: `input_data/packer_orders.txt`
-  - Tests the internal coupling between packing and curbside operations
-
-### Full System Test
-- **test_full_system**: Complete integration with deterministic customer mix (walk-in and online)
-  - Input: `input_data/full_system_customers.txt`
-  - Validates end-to-end routing and correct separation of customer paths
-
-Run all tests with `make run-tests`. Each test auto-discovers input files from `input_data/` and logs to stdout.
-
-## Inputs
-Input files for tests live in input_data/:
-- **one_customer.txt**: Single walk-in customer
-- **cash_one_customer.txt**: Single cash payment customer
-- **payment_two_customers.txt**: Two card payment customers
-- **checkout_customers.txt**: Three walk-in customers for coupled checkout test
-- **online_customers.txt**: Two online customers for coupled online test
-- **full_system_customers.txt**: Mixed walk-in and online customers for full integration test
-- Additional atomic test inputs for generator, distributor, packer, curbside, and sink models
-
-## Logs
-Saved logs are under simulation_results/:
-- main_run.log (main simulation output)
-- tests_run.log (all atomic and coupled test output)
-
-## Notes
-The simulation run time is set in top_model/main.cpp. You can shorten or extend it by changing the value passed to `root.simulate(...)`.
