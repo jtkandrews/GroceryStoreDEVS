@@ -50,7 +50,7 @@ To compile and run this project:
 > `../cadmium_v2/include`
 
 ## Compilation
-This project supports both CMake and Makefile workflows.
+This project uses CMake.
 
 ### Recommended (clean build script)
 ```bash
@@ -72,17 +72,11 @@ make
 cd ..
 ```
 
-### Makefile build
-```bash
-make
-```
-
 ## Testing
-After building, run executables from `bin/` directly (or use the Makefile run targets).
+After building, run executables from `bin/` directly.
 
 ### Main simulation
 * `./bin/grocery_sim`
-* or `make run_grocery_sim`
 
 ### Atomic tests
 * `./bin/test_cash`
